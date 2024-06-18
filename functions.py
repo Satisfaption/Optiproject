@@ -6,7 +6,7 @@ from geopy.geocoders import Nominatim
 from math import radians, sin, cos, sqrt, atan2
 import requests
 from pymongo import MongoClient
-from config import MONGODB_URI_GUEST
+from config import MONGODB_URI_GUEST, OPENROUTE_API_KEY
 from pymongo.errors import ServerSelectionTimeoutError
 
 
@@ -49,7 +49,7 @@ def update_coordinates(street, plz, town, result_label):
 
 
 def calculate_driving_distance(start_lat, start_lon, end_lat, end_lon):
-    api_key = '5b3ce3597851110001cf62489a6945fd9904480090dc413078afb8b2'  # Replace with your API key
+    api_key = OPENROUTE_API_KEY  # Replace with your API key
     url = f'https://api.openrouteservice.org/v2/directions/driving-car?api_key={api_key}&start={start_lon},{start_lat}&end={end_lon},{end_lat}'
     response = requests.get(url)
     data = response.json()
