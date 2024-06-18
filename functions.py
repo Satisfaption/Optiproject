@@ -6,7 +6,7 @@ from geopy.geocoders import Nominatim
 from math import radians, sin, cos, sqrt, atan2
 import requests
 from pymongo import MongoClient
-from config import mongodb_me
+from config import MONGODB_URI_GUEST
 from pymongo.errors import ServerSelectionTimeoutError
 
 
@@ -65,7 +65,7 @@ def get_table_data(street, plz, town, selected_greening, perimeter):
     # Calculate user's coordinates
     user_lat, user_lon = get_coordinates(street, plz, town)
 
-    client = get_mongo_client(mongodb_me)
+    client = get_mongo_client(MONGODB_URI_GUEST)
     db = client['Optigrün']
     partners_collection = db['Partner']
 
