@@ -75,3 +75,11 @@ class CustomTable(ctk.CTkFrame):
                 widget.destroy()
             del self.row_widgets[row - 1]
         self.selected_rows.clear()
+
+    def clear_table(self):
+        for row_widgets in self.row_widgets:
+            for widget in row_widgets:
+                widget.destroy()
+        self.row_widgets.clear()
+        self.selected_rows.clear()
+        self.current_row = 1

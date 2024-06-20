@@ -51,8 +51,8 @@ def update_coordinates(street, plz, town, result_label):
 def calculate_driving_distance(start_lat, start_lon, end_lat, end_lon):
     api_key = OPENROUTE_API_KEY  # Replace with your API key
     url = f'https://api.openrouteservice.org/v2/directions/driving-car?api_key={api_key}&start={start_lon},{start_lat}&end={end_lon},{end_lat}'
-    max_retries = 5
-    retry_delay = 2  # seconds
+    max_retries = 3
+    retry_delay = 0.5  # seconds
 
     for attempt in range(max_retries):
         try:

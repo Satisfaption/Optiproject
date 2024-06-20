@@ -57,6 +57,8 @@ class MainPage(BaseLayout):
         side_button.grid(row=6, column=0)
 
     def setup_table_content(self):
+        for widget in self.main_frame.winfo_children():
+            widget.destroy()
         columns = ['Name', 'Pisa', 'Begrünungsart', 'Fläche Min (m²)', 'Fläche Max (m²)', 'PLZ', 'Ort', 'Entfernung']
         widths = [120, 120, 120, 120, 120, 100, 100, 100]
         self.custom_table = CustomTable(self.main_frame, columns, widths)
@@ -75,10 +77,7 @@ class MainPage(BaseLayout):
 
     def populate_table(self):
         # Clear existing data
-        for content_frame in self.custom_table.columns.values():
-            for widget in content_frame.winfo_children():
-                widget.destroy()
-        self.custom_table.current_row = 1
+        self.custom_table.clear_table()
 
         street = self.street_entry.get()
         plz = self.plz_entry.get()
