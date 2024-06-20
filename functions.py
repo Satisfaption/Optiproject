@@ -51,14 +51,39 @@ def update_coordinates(street, plz, town, result_label):
 def calculate_driving_distance(start_lat, start_lon, end_lat, end_lon):
     api_key = OPENROUTE_API_KEY  # Replace with your API key
     url = f'https://api.openrouteservice.org/v2/directions/driving-car?api_key={api_key}&start={start_lon},{start_lat}&end={end_lon},{end_lat}'
-    response = requests.get(url)
-    data = response.json()
-    if 'features' in data and data['features']:
-        distance = data['features'][0]['properties']['segments'][0]['distance']
-        duration = data['features'][0]['properties']['segments'][0]['duration']
-        return distance, duration
-    else:
-        return None, None
+    max_retries = 5
+    retry_delay = 2  # seconds
+
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+            data = response.json()
+
+            if 'features' in data and data['features']:
+                distance = data['features'][0]['properties']['segments'][0]['distance']
+                duration = data['features'][0]['properties']['segments'][0]['duration']
+                return distance, duration
+            else:
+                return None, None
+        except requests.exceptions.HTTPError as http_err:
+            if response.status_code == 503 and attempt < max_retries - 1:
+                print(
+                    f"503 error occurred, retrying in {retry_delay} seconds... (attempt {attempt + 1} of {max_retries})")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                print(f"HTTP error occurred: {http_err}")
+                break
+        except requests.exceptions.RequestException as req_err:
+            print(f"Request error occurred: {req_err}")
+            break
+        except ValueError as json_err:
+            print(f"JSON decode error occurred: {json_err}")
+            print("Response content:", response.text)
+            break
+
+    return None, None
 
 
 def get_table_data(street, plz, town, selected_greening, perimeter):
