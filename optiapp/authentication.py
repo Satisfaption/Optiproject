@@ -1,6 +1,13 @@
 from pymongo import MongoClient, errors
 from urllib.parse import quote_plus
-from config import MONGODB_URI_TEMPLATE, MONGODB_URI_GUEST, MONGODB_NAME
+from dotenv import load_dotenv
+import os
+
+
+load_dotenv()
+MONGODB_URI_TEMPLATE = os.getenv('MONGODB_URI_TEMPLATE')
+MONGODB_URI_GUEST = os.getenv('MONGODB_URI_GUEST')
+MONGODB_NAME = os.getenv('MONGODB_NAME')
 
 
 class AuthManager:

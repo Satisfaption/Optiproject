@@ -2,18 +2,30 @@ import customtkinter as ctk
 from login_page import LoginPage
 from main_page import MainPage
 from baselayout import BaseLayout
+from update import prompt_update
 from partner_page import PartnerPage
 
 
 class Application(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self.withdraw()
         self.title("Optigrün")
-        self.set_window_size(250, 300)
 
         self.auth_manager = None
         self._frame = None
-        self.switch_frame(LoginPage)
+        self.after(100, self.check_updates)
+
+    def check_updates(self):
+        prompt_update(self, self.on_no_update, self.on_yes_update)
+
+    def on_no_update(self):
+        self.switch_frame(LoginPage, width=250, height=300)
+        self.deiconify()
+
+    def on_yes_update(self):
+        # Optional: Define any additional behavior if the update is successful and the app should restart
+        pass
 
     def switch_frame(self, frame_class, width=None, height=None):
         """Destroys current frame and replaces it with a new one."""

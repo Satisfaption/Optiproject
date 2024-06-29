@@ -1,14 +1,18 @@
 import os
 import sys
 import time
+from dotenv import load_dotenv
 
 from geopy.geocoders import Nominatim
 from math import radians, sin, cos, sqrt, atan2
 import requests
 from pymongo import MongoClient
-from config import MONGODB_URI_GUEST, OPENROUTE_API_KEY
 from pymongo.errors import ServerSelectionTimeoutError
 
+
+load_dotenv()
+MONGODB_URI_GUEST = os.getenv('MONGODB_URI_GUEST')
+OPENROUTE_API_KEY = os.getenv('OPENROUTE_API_KEY')
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     # Convert latitude and longitude from degrees to radians
@@ -160,13 +164,8 @@ def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        # noinspection PyUnresolvedReferences
         base_path = getattr(sys, '_MEIPASS', os.path.abspath(".."))
     except Exception:
         base_path = os.path.abspath("..")
-
-    # Adjust for _internal directory if present
-    if os.path.exists(os.path.join(base_path, '_internal')):
-        base_path = os.path.join(base_path, '_internal')
 
     return os.path.join(base_path, relative_path)

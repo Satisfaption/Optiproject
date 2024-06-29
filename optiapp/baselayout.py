@@ -11,7 +11,7 @@ class BaseLayout(ctk.CTkFrame):
         self.side_frame = None
         self.footer_frame = None
         self.configure(fg_color='white')
-        self.image_path = resource_path('ressources/Optigruen-Logo_335px.png')
+        self.image_path = resource_path('optiapp/ressources/Optigruen-Logo_335px.png')  # from functions
 
         self.setup_logo_frame()
         self.setup_header_frame()
@@ -46,11 +46,6 @@ class BaseLayout(ctk.CTkFrame):
         menu = ctk.CTkOptionMenu(header_frame, values=menu_options, command=self.handle_menu_option_select)
         menu.set("Menü")
         menu.grid(row=0, column=1)
-
-        """partner_button = ctk.CTkButton(header_frame, text="Partner Menü", command=self.go_to_partner_page)
-        partner_button.grid(row=0, column=0)
-        logout_button = ctk.CTkButton(header_frame, text="Logout", command=self.go_to_login_page)
-        logout_button.grid(row=0, column=1)"""
 
     def setup_side_frame(self):
         self.side_frame = ctk.CTkFrame(self, border_width=4, border_color='#c8f7be', fg_color='#c8f7be')
