@@ -51,7 +51,3 @@ class LoginPage(ctk.CTkFrame):
             print(f"Logged in as {auth_manager.get_current_user()}")
         else:
             print("Guest login failed")
-
-# to do:
-# authentication
-# light up entry when something is missing

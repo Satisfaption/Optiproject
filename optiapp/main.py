@@ -1,9 +1,6 @@
 import customtkinter as ctk
 from login_page import LoginPage
-from main_page import MainPage
-from baselayout import BaseLayout
 from update import prompt_update
-from partner_page import PartnerPage
 
 
 class Application(ctk.CTk):
@@ -24,7 +21,6 @@ class Application(ctk.CTk):
         self.deiconify()
 
     def on_yes_update(self):
-        # Optional: Define any additional behavior if the update is successful and the app should restart
         pass
 
     def switch_frame(self, frame_class, width=None, height=None):
@@ -35,7 +31,6 @@ class Application(ctk.CTk):
         self._frame = new_frame
         self._frame.pack(expand=True, fill="both")
 
-        # Set window size if width and height are provided
         if width is not None and height is not None:
             self.set_window_size(width, height)
 
