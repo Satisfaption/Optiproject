@@ -3,6 +3,7 @@ import customtkinter as ctk
 from baselayout import BaseLayout
 from customtable import CustomTable
 from database import Database
+from functions import get_coordinates
 
 
 class PartnerPage(BaseLayout):
@@ -176,6 +177,15 @@ class PartnerPage(BaseLayout):
         print(f"Added row {row_index}: {self.greening_entries[-1]}")
 
     def save_partner(self):
+        # Validation of mandatory fields
+        name = self.name_entry.get()
+        kundennummer = self.convert_to_int(self.kundennummer_entry.get())
+        plz = self.convert_to_int(self.plz_entry.get())
+
+        if not name or not kundennummer or not plz:
+            self.show_warning("Name, Kundennummer und PLZ sind erforderliche Felder.")
+            return
+
         # Save customer details to the database
         customer_data = {
             'Name': self.name_entry.get(),
@@ -192,6 +202,12 @@ class PartnerPage(BaseLayout):
             'Präferierter DD': self.pdd_entry.get(),
             'Begrünungsart': {}
         }
+
+        # Get the coordinates
+        latitude, longitude = get_coordinates(customer_data['Straße'], customer_data['Postleitzahl'],
+                                              customer_data['Ort'])
+        customer_data['Latitude'] = latitude
+        customer_data['Longitude'] = longitude
 
         # Collect greening details
         for entry_set in self.greening_entries:
@@ -228,7 +244,15 @@ class PartnerPage(BaseLayout):
     def show_popup(self, message, title="Notification"):
         self.popup = ctk.CTkToplevel(self.content_frame)
         self.popup.title(title)
-        self.popup.geometry("300x150")
+        width = 300
+        height = 150
+
+        # Center popup on screen
+        screen_width = self.popup.winfo_screenwidth()
+        screen_height = self.popup.winfo_screenheight()
+        x = (screen_width - width) // 2
+        y = (screen_height - height) // 2
+        self.popup.geometry(f"{width}x{height}+{x}+{y}")
 
         self.popup.transient(self.content_frame)
         self.popup.grab_set()
@@ -260,7 +284,8 @@ class PartnerPage(BaseLayout):
         self.sidecontent_frame.rowconfigure(3, weight=4, uniform='a')
         self.sidecontent_frame.columnconfigure(0, weight=1, uniform='b')
 
-        self.autocomplete_entry = AutocompleteEntry(self.sidecontent_frame, auth_manager=self.auth_manager, placeholder_text='Name')
+        self.autocomplete_entry = AutocompleteEntry(self.sidecontent_frame, auth_manager=self.auth_manager,
+                                                    placeholder_text='Name')
         self.autocomplete_entry.grid(row=0, column=0, sticky="s")
 
         self.kundennummer_entry = ctk.CTkEntry(self.sidecontent_frame, placeholder_text="Kundennummer")
@@ -436,7 +461,8 @@ class PartnerPage(BaseLayout):
         self.content_frame.rowconfigure(3, weight=4, uniform='a')
         self.content_frame.columnconfigure(0, weight=1, uniform='b')
 
-        self.autocomplete_entry = AutocompleteEntry(self.content_frame, auth_manager=self.auth_manager, placeholder_text='Name')
+        self.autocomplete_entry = AutocompleteEntry(self.content_frame, auth_manager=self.auth_manager,
+                                                    placeholder_text='Name')
         self.autocomplete_entry.grid(row=0, column=0, sticky="s")
 
         self.kundennummer_entry = ctk.CTkEntry(self.content_frame, placeholder_text="Kundennummer")
@@ -489,10 +515,9 @@ class PartnerPage(BaseLayout):
     def show_warning(self, message):
         warning_popup = ctk.CTkToplevel(self)
         warning_popup.title("Warnung")
-        warning_popup.geometry("300x150")
 
         # Center the popup on the screen
-        window_width = 250
+        window_width = 300
         window_height = 120
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
@@ -504,23 +529,14 @@ class PartnerPage(BaseLayout):
         warning_popup.transient(self)
         warning_popup.grab_set()
 
-        warning_label = ctk.CTkLabel(warning_popup, text=message, wraplength=150)
+        warning_label = ctk.CTkLabel(warning_popup, text=message, wraplength=250)
         warning_label.pack(padx=20, pady=20)
 
         ok_button = ctk.CTkButton(warning_popup, text="OK", command=warning_popup.destroy)
         ok_button.pack(pady=(0, 10))
 
-        self.highlight_entries()
-
         # Ensure the popup is closed properly
         warning_popup.protocol("WM_DELETE_WINDOW", warning_popup.destroy)
-
-    def highlight_entries(self):
-        # Highlight entry fields in red if they are empty
-        if not self.autocomplete_entry.get():
-            self.autocomplete_entry.configure(border_color="red")
-        if not self.kundennummer_entry.get():
-            self.kundennummer_entry.configure(border_color="red")
 
     def delete_selection(self):
         if not hasattr(self, 'custom_table') or self.custom_table is None:
@@ -582,7 +598,8 @@ class AutocompleteEntry(ctk.CTkEntry):
                 self.autocomplete_popup.destroy()
 
             self.autocomplete_popup = ctk.CTkToplevel(self)
-            self.autocomplete_popup.geometry(f"{self.winfo_width()}x100+{self.winfo_rootx()}+{self.winfo_rooty() + self.winfo_height()}")
+            self.autocomplete_popup.geometry(
+                f"{self.winfo_width()}x100+{self.winfo_rootx()}+{self.winfo_rooty() + self.winfo_height()}")
             self.autocomplete_popup.overrideredirect(True)
             self.autocomplete_popup.lift()
 
