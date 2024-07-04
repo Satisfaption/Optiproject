@@ -9,10 +9,10 @@ import requests
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
 
-
 load_dotenv()
 MONGODB_URI_GUEST = os.getenv('MONGODB_URI_GUEST')
 OPENROUTE_API_KEY = os.getenv('OPENROUTE_API_KEY')
+
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     # Convert latitude and longitude from degrees to radians
@@ -90,61 +90,51 @@ def calculate_driving_distance(start_lat, start_lon, end_lat, end_lon):
     return None, None
 
 
-def get_table_data(street, plz, town, selected_greening, perimeter):
+def get_filtered_data(street, plz, town, table_data):
     # Calculate user's coordinates
     user_lat, user_lon = get_coordinates(street, plz, town)
 
-    client = get_mongo_client(MONGODB_URI_GUEST)
-    db = client['Optigrün']
-    partners_collection = db['Partner']
+    filtered_data = {}
 
-    table_data = {}
+    for kundennummer, details in table_data.items():
+        name = details['Name']
+        pisa = details['Pisa']
+        ort = details['Ort']
+        plz = details['Postleitzahl']
+        partner_lat = details['Latitude']
+        partner_long = details['Longitude']
+        begruenungsart_data = details['Begrünungsart']
 
-    # Query partners that offer the selected greening type
-    partners = partners_collection.find({f'Begrünungsart.{selected_greening}': {'$exists': True}})
+        for greening_type, greening_details in begruenungsart_data.items():
+            entfernung = greening_details.get('Entfernung')
+            if entfernung is not None:
+                entfernung = float(entfernung)
 
-    for partner in partners:
-        kundennummer = partner['Kundennummer']
-        name = partner['Name']
-        pisa = partner['Pisa']
-        plz = partner['Postleitzahl']
-        ort = partner['Ort']
-        partner_lat = partner['Latitude']
-        partner_long = partner['Longitude']
-        begruenungsart_data = partner['Begrünungsart']
+                # Calculate the haversine distance
+                haversine_distance = calculate_distance(user_lat, user_lon, partner_lat, partner_long)
 
-        # Check if the selected greening type is available for this partner
-        if selected_greening in begruenungsart_data:
-            details = begruenungsart_data[selected_greening]
-            flache_min = details['Fläche (Minimum)']
-            flache_max = details['Fläche (Maximum)']
-            # entfernung = details['Entfernung']
+                if haversine_distance <= entfernung:
+                    print(f"{name} im Ort {ort} liegt mit {haversine_distance} km im Umkreis.")
+                    distance_road, _ = calculate_driving_distance(user_lat, user_lon, partner_lat, partner_long)
+                    if distance_road is not None:
+                        distance_km = distance_road / 1000
+                        distance_km = round(distance_km, 2)
+                        if distance_km <= entfernung:
+                            if kundennummer not in filtered_data:
+                                filtered_data[kundennummer] = {
+                                    'Name': name,
+                                    'Pisa': pisa,
+                                    'Postleitzahl': plz,
+                                    'Ort': ort,
+                                    'Distances': {}
+                                }
+                            filtered_data[kundennummer]['Distances'][greening_type] = {
+                                'Fläche (Minimum)': greening_details['Fläche (Minimum)'],
+                                'Fläche (Maximum)': greening_details['Fläche (Maximum)'],
+                                'Distance_km': distance_km
+                            }
 
-            # Calculate the haversine distance
-            haversine_distance = calculate_distance(user_lat, user_lon, partner_lat, partner_long)
-            if haversine_distance <= perimeter:
-                print(f"{name} im Ort {ort} liegt mit {haversine_distance} im Umkreis.")
-                distance_road, _ = calculate_driving_distance(user_lat, user_lon, partner_lat, partner_long)
-                if distance_road is not None:
-                    distance_km = distance_road / 1000
-                    distance_km = round(distance_km, 2)
-                    if kundennummer not in table_data:
-                        table_data[kundennummer] = {
-                            'Name': name,
-                            'Pisa': pisa,
-                            'PLZ': plz,
-                            'Ort': ort,
-                            'Distances': {}
-                        }
-
-                    table_data[kundennummer]['Distances'][selected_greening] = {
-                        'Fläche (Minimum)': flache_min,
-                        'Fläche (Maximum)': flache_max,
-                        'Distance_km': distance_km
-                    }
-
-    client.close()
-    return table_data
+    return filtered_data
 
 
 def get_mongo_client(uri, retries=5, delay=5):

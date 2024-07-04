@@ -2,13 +2,15 @@ import customtkinter as ctk
 
 from baselayout import BaseLayout
 from customtable import CustomTable
-from functions import get_table_data
+from functions import get_filtered_data
+from database import Database
 
 
 class MainPage(BaseLayout):
     def __init__(self, parent):
         super().__init__(parent)
-        auth_manager = self.master.auth_manager
+        self.auth_manager = self.master.auth_manager
+        self.db = Database(self.auth_manager.get_current_user_uri(), self.auth_manager.dbname)
         # pisa frame contains pisa label which will be a string to copy (C-15-123456)
         self.pisa_frame = None
         self.pisa_label = None
@@ -18,7 +20,6 @@ class MainPage(BaseLayout):
         self.table_data = None
         # the 4 entry fields capture user input data, so does the greening_option but with 3 limited choices
         self.greening_option = None
-        self.umkreis_entry = None
         self.ort_entry = None
         self.plz_entry = None
         self.street_entry = None
@@ -47,14 +48,12 @@ class MainPage(BaseLayout):
         self.ort_entry = ctk.CTkEntry(self.side_frame, placeholder_text="Ort")
         self.ort_entry.grid(row=3, column=0)
 
-        options = ["Extensiv", "Intensiv", "Verkehrsdach"]
-        self.greening_option = ctk.CTkOptionMenu(self.side_frame, values=options)
-        self.greening_option.set("Begrünungsart")
-        self.greening_option.grid(row=4, column=0)
-        self.umkreis_entry = ctk.CTkEntry(self.side_frame, placeholder_text="Umkreis (km)")
-        self.umkreis_entry.grid(row=5, column=0)
         side_button = ctk.CTkButton(self.side_frame, text="Suchen", command=self.populate_table)
-        side_button.grid(row=6, column=0)
+        side_button.grid(row=4, column=0)
+        options = ["Extensiv", "Intensiv", "Verkehrsdach"]
+        self.greening_option = ctk.CTkOptionMenu(self.side_frame, values=options, command=self.on_greening_option_change)
+        self.greening_option.set("Begrünungsart")
+        self.greening_option.grid(row=5, column=0)
 
     def setup_table_content(self):
         for widget in self.main_frame.winfo_children():
@@ -83,23 +82,53 @@ class MainPage(BaseLayout):
         plz = self.plz_entry.get()
         town = self.ort_entry.get()
         greenings = self.greening_option.get()
-        perimeter = float(self.umkreis_entry.get())
+        if not plz:
+            self.show_warning("Es wird mindestens eine Postleitzahl benötigt um die Suche zu starten.")
+            return
+        query = {}
+        data_all = self.db.get_table_data(query)
 
-        self.table_data = get_table_data(street, plz, town, greenings, perimeter)
+        self.table_data = get_filtered_data(street, plz, town, data_all)
 
-        for partner_id, partner_info in self.table_data.items():
-            name = partner_info['Name']
-            pisa = partner_info['Pisa']
-            plz = partner_info['PLZ']
-            ort = partner_info['Ort']
-            for greening_type, greening_info in partner_info['Distances'].items():
-                flache_min = greening_info['Fläche (Minimum)']
-                flache_max = greening_info['Fläche (Maximum)']
-                distance_km = greening_info['Distance_km']
-                row_data = [name, pisa, greening_type, flache_min, flache_max, plz, ort, distance_km]
-                self.custom_table.add_row(row_data)
+        self.filter_table(self.table_data, greenings)
 
         self.update_footer()
+
+    def filter_table(self, data, filter_option):
+        self.custom_table.clear_table()
+        if not filter_option or filter_option == "Begrünungsart":
+            # If no greening type is selected, return all data
+            for partner_id, partner_info in data.items():
+                name = partner_info['Name']
+                pisa = partner_info['Pisa']
+                plz = partner_info['Postleitzahl']
+                ort = partner_info['Ort']
+
+                for greening_type, greening_info in partner_info['Distances'].items():
+                    flache_min = greening_info['Fläche (Minimum)']
+                    flache_max = greening_info['Fläche (Maximum)']
+                    distance_km = greening_info['Distance_km']
+                    row_data = [name, pisa, greening_type, flache_min, flache_max, plz, ort, distance_km]
+                    self.custom_table.add_row(row_data)
+        else:
+            # Filter data based on selected greening type
+            for partner_id, partner_info in data.items():
+                name = partner_info['Name']
+                pisa = partner_info['Pisa']
+                plz = partner_info['Postleitzahl']
+                ort = partner_info['Ort']
+
+                if filter_option in partner_info['Distances']:
+                    greening_info = partner_info['Distances'][filter_option]
+                    flache_min = greening_info['Fläche (Minimum)']
+                    flache_max = greening_info['Fläche (Maximum)']
+                    distance_km = greening_info['Distance_km']
+                    row_data = [name, pisa, filter_option, flache_min, flache_max, plz, ort, distance_km]
+                    self.custom_table.add_row(row_data)
+
+    def on_greening_option_change(self, selected_greening):
+        if self.table_data:
+            self.filter_table(self.table_data, selected_greening)
 
     def update_footer(self):
         # Clear existing footer data
@@ -120,3 +149,29 @@ class MainPage(BaseLayout):
             self.master.clipboard_clear()
             self.master.clipboard_append(self.pisa_label.cget("text"))
             self.master.update()  # Now it stays on the clipboard after the window is closed
+
+    def show_warning(self, message):
+        warning_popup = ctk.CTkToplevel(self)
+        warning_popup.title("Warnung")
+
+        # Center the popup on the screen
+        window_width = 300
+        window_height = 120
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        position_top = int(screen_height / 2 - window_height / 2)
+        position_right = int(screen_width / 2 - window_width / 2)
+        warning_popup.geometry(f"{window_width}x{window_height}+{position_right}+{position_top}")
+
+        # Make the popup modal and always on top
+        warning_popup.transient(self)
+        warning_popup.grab_set()
+
+        warning_label = ctk.CTkLabel(warning_popup, text=message, wraplength=250)
+        warning_label.pack(padx=20, pady=20)
+
+        ok_button = ctk.CTkButton(warning_popup, text="OK", command=warning_popup.destroy)
+        ok_button.pack(pady=(0, 10))
+
+        # Ensure the popup is closed properly
+        warning_popup.protocol("WM_DELETE_WINDOW", warning_popup.destroy)

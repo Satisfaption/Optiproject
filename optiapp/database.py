@@ -77,17 +77,37 @@ class Database:
 
         # Extract relevant data and store it in a dictionary
         for partner in partners:
-            kundennummer = partner['Kundennummer']
-            name = partner['Name']
-            street = partner['Straße']
-            plz = partner['Postleitzahl']
-            ort = partner['Ort']
+            kundennummer = partner.get('Kundennummer')
+            name = partner.get('Name')
+            street = partner.get('Straße')
+            plz = partner.get('Postleitzahl')
+            ort = partner.get('Ort')
+            email = partner.get('E-Mail')
+            url = partner.get('URL')
+            telefon = partner.get('Telefon')
+            fax = partner.get('Fax')
+            gebietsleiter = partner.get('Gebietsleiter')
+            pdd = partner.get('Präferierter DD')
+            pisa = partner.get('Pisa')
+            latitude = partner.get('Latitude')
+            longitude = partner.get('Longitude')
+            begruenungsart = partner.get('Begrünungsart', {})
 
             table_data[kundennummer] = {
                 'Name': name,
                 'Straße': street,
                 'Postleitzahl': plz,
-                'Ort': ort
+                'Ort': ort,
+                'E-Mail': email,
+                'URL': url,
+                'Telefon': telefon,
+                'Fax': fax,
+                'Gebietsleiter': gebietsleiter,
+                'Präferierter DD': pdd,
+                'Pisa': pisa,
+                'Latitude': latitude,
+                'Longitude': longitude,
+                'Begrünungsart': begruenungsart
             }
 
         return table_data
