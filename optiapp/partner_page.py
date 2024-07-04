@@ -556,6 +556,7 @@ class PartnerPage(BaseLayout):
             else:
                 print(f"No customers found with Kundennummers: {kundennummern}")
         except Exception as e:
+            self.show_warning('Gast-Nutzer hat keine Berechtigung dafür.')
             print(f"Error deleting customers: {e}")
 
     def reset_frame_configuration(self):
