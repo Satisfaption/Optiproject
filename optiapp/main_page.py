@@ -92,10 +92,9 @@ class MainPage(BaseLayout):
 
         self.filter_table(self.table_data, greenings)
 
-        self.update_footer()
-
     def filter_table(self, data, filter_option):
         self.custom_table.clear_table()
+        filtered_data = {}
         if not filter_option or filter_option == "Begrünungsart":
             # If no greening type is selected, return all data
             for partner_id, partner_info in data.items():
@@ -110,6 +109,8 @@ class MainPage(BaseLayout):
                     distance_km = greening_info['Distance_km']
                     row_data = [name, pisa, greening_type, flache_min, flache_max, plz, ort, distance_km]
                     self.custom_table.add_row(row_data)
+                    if partner_id not in filtered_data:
+                        filtered_data[partner_id] = partner_info
         else:
             # Filter data based on selected greening type
             for partner_id, partner_info in data.items():
@@ -125,18 +126,22 @@ class MainPage(BaseLayout):
                     distance_km = greening_info['Distance_km']
                     row_data = [name, pisa, filter_option, flache_min, flache_max, plz, ort, distance_km]
                     self.custom_table.add_row(row_data)
+                    if partner_id not in filtered_data:
+                        filtered_data[partner_id] = partner_info
+
+        self.update_footer(filtered_data)
 
     def on_greening_option_change(self, selected_greening):
         if self.table_data:
             self.filter_table(self.table_data, selected_greening)
 
-    def update_footer(self):
+    def update_footer(self, filtered_data):
         # Clear existing footer data
         for widget in self.pisa_frame.winfo_children():
             widget.destroy()
 
             # Concatenate Pisa values separated by commas
-            pisa_values = [data['Pisa'] for data in self.table_data.values() if data['Pisa'] is not None]
+            pisa_values = [data['Pisa'] for data in filtered_data.values() if data['Pisa'] is not None]
             pisa_text = ", ".join(pisa_values)
             self.pisa_label = ctk.CTkLabel(self.pisa_frame, text=pisa_text, justify="left", wraplength=700)
             self.pisa_label.grid(row=0, column=0)
