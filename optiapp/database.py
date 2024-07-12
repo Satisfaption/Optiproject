@@ -34,7 +34,7 @@ class Database:
         else:
             raise ConnectionError("Failed to connect to the MongoDB server.")
 
-    def get_mongo_client(self, uri, timeout=60000):
+    def get_mongo_client(self, uri, timeout=2000):
         try:
             client = MongoClient(uri, serverSelectionTimeoutMS=timeout)
             client.server_info()  # Trigger a server selection to check connection

@@ -18,18 +18,22 @@ class AuthManager:
         self.current_user_uri = None
 
     def authenticate_user(self, username, password):
+        if not username or not password:
+            return False, "Benutzername und Password werden benötigt."
         encoded_username = quote_plus(username)
         encoded_password = quote_plus(password)
         uri = self.uri_template.format(username=encoded_username, password=encoded_password)
 
         try:
-            client = MongoClient(uri)
+            client = MongoClient(uri, serverSelectionTimeoutMS=2000)
             client.list_database_names()  # Verify connection
             self.current_user = username
             self.current_user_uri = uri
-            return True
+            return True, "Authenticated successfully."
         except errors.OperationFailure:
-            return False
+            return False, "Ungültiger Benutzername oder Passwort."
+        except errors.ConnectionFailure:
+            return False, "Verbindung zur Datenbank fehlgeschlagen."
 
     def authenticate_guest(self):
         try:
