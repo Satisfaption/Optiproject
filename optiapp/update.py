@@ -5,7 +5,7 @@ import hashlib
 import os
 import yaml
 import customtkinter as ctk
-from config import latest_url
+from config import latest_url, download_url
 from packaging import version
 
 
@@ -65,7 +65,7 @@ def check_for_updates():
 
 
 def download_update(version_info):
-    url = version_info['files'][0]['url']
+    url = f"{download_url}{version_info['files'][0]['url']}"
     expected_sha512 = version_info['files'][0]['sha512']
     file_name = version_info['path']
     print(url, expected_sha512, file_name)
