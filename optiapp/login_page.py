@@ -54,12 +54,16 @@ class LoginPage(ctk.CTkFrame):
 
     def login_guest(self):
         auth_manager = AuthManager()
-        if auth_manager.authenticate_guest():
+        success, message = auth_manager.authenticate_guest()
+
+        if success:
+            # Navigate to the main application page
             self.master.auth_manager = auth_manager
             self.go_to_main_page()
-            print(f"Logged in as {auth_manager.get_current_user()}")
+            print("Login successful")
         else:
-            print("Guest login failed")
+            # Show an error message using ErrorPopup
+            self.show_warning(message)
 
     def show_warning(self, message):
         warning_popup = ctk.CTkToplevel(self)

@@ -37,13 +37,15 @@ class AuthManager:
 
     def authenticate_guest(self):
         try:
-            client = MongoClient(MONGODB_URI_GUEST)
+            client = MongoClient(MONGODB_URI_GUEST, serverSelectionTimeoutMS=2000)
             client.list_database_names()  # Verify connection
             self.current_user = 'Guest'
             self.current_user_uri = MONGODB_URI_GUEST
-            return True
+            return True, "Authenticated successfully."
         except errors.OperationFailure:
-            return False
+            return False, "Fehlerhafter Gast-Login."
+        except errors.ConnectionFailure:
+            return False, "Verbindung zur Datenbank fehlgeschlagen."
 
     def get_current_user_uri(self):
         return self.current_user_uri
