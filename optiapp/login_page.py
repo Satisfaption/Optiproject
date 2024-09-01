@@ -47,7 +47,6 @@ class LoginPage(ctk.CTkFrame):
             # Navigate to the main application page
             self.master.auth_manager = auth_manager
             self.go_to_main_page()
-            print("Login successful")
         else:
             # Show an error message using ErrorPopup
             self.show_warning(message)
@@ -60,7 +59,6 @@ class LoginPage(ctk.CTkFrame):
             # Navigate to the main application page
             self.master.auth_manager = auth_manager
             self.go_to_main_page()
-            print("Login successful")
         else:
             # Show an error message using ErrorPopup
             self.show_warning(message)

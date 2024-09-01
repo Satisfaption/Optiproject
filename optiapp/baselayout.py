@@ -7,11 +7,12 @@ from functions import resource_path
 class BaseLayout(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent)
+        self.header_frame = None
         self.main_frame = None
         self.side_frame = None
         self.footer_frame = None
         self.configure(fg_color='white')
-        self.image_path = resource_path('optiapp/ressources/Optigruen-Logo_335px.png')  # from functions
+        self.image_path = resource_path('ressources/Optigruen-Logo_335px.png')  # from functions
 
         self.setup_logo_frame()
         self.setup_header_frame()
@@ -34,18 +35,19 @@ class BaseLayout(ctk.CTkFrame):
         image_label.grid(row=0, column=0)
 
     def setup_header_frame(self):
-        header_frame = ctk.CTkFrame(self, border_width=4, border_color='#c8f7be', fg_color='#c8f7be')
-        header_frame.grid(row=0, column=1, columnspan=5, sticky="nsew", padx=3, pady=3)
-        header_frame.propagate(False)
+        self.header_frame = ctk.CTkFrame(self, border_width=4, border_color='#c8f7be', fg_color='#c8f7be')
+        self.header_frame.grid(row=0, column=1, columnspan=5, sticky="nsew", padx=3, pady=3)
+        self.header_frame.propagate(False)
 
-        header_frame.columnconfigure(0, weight=10)
-        header_frame.columnconfigure(1, weight=1)
-        header_frame.rowconfigure(0, weight=1)
+        self.header_frame.columnconfigure(0, weight=10)
+        self.header_frame.columnconfigure(1, weight=1)
+        self.header_frame.columnconfigure(2, weight=1)
+        self.header_frame.rowconfigure(0, weight=1)
 
         menu_options = ["Partner", "Kunden-Suche", "Logout"]
-        menu = ctk.CTkOptionMenu(header_frame, values=menu_options, command=self.handle_menu_option_select)
+        menu = ctk.CTkOptionMenu(self.header_frame, values=menu_options, command=self.handle_menu_option_select)
         menu.set("Menü")
-        menu.grid(row=0, column=1)
+        menu.grid(row=0, column=2)
 
     def setup_side_frame(self):
         self.side_frame = ctk.CTkFrame(self, border_width=4, border_color='#c8f7be', fg_color='#c8f7be')

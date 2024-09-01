@@ -38,14 +38,14 @@ class Database:
         try:
             client = MongoClient(uri, serverSelectionTimeoutMS=timeout)
             client.server_info()  # Trigger a server selection to check connection
-            print("Connected to MongoDB server.")
+            #print("Connected to MongoDB server.")
             return client
         except (
                 errors.ServerSelectionTimeoutError,
                 errors.ConnectionFailure,
                 errors.ConfigurationError,
                 errors.PyMongoError) as err:
-            print(f"MongoDB connection error: {err}")
+            #print(f"MongoDB connection error: {err}")
             return None
 
     def save_customer(self, customer_data):
@@ -82,10 +82,6 @@ class Database:
             street = partner.get('Straße')
             plz = partner.get('Postleitzahl')
             ort = partner.get('Ort')
-            email = partner.get('E-Mail')
-            url = partner.get('URL')
-            telefon = partner.get('Telefon')
-            fax = partner.get('Fax')
             gebietsleiter = partner.get('Gebietsleiter')
             pdd = partner.get('Präferierter DD')
             pisa = partner.get('Pisa')
@@ -98,10 +94,6 @@ class Database:
                 'Straße': street,
                 'Postleitzahl': plz,
                 'Ort': ort,
-                'E-Mail': email,
-                'URL': url,
-                'Telefon': telefon,
-                'Fax': fax,
                 'Gebietsleiter': gebietsleiter,
                 'Präferierter DD': pdd,
                 'Pisa': pisa,
@@ -129,8 +121,33 @@ class Database:
             self.client = None
             self.db = None
 
+    def update_documents(self):
+        collection = self.db['Partner']
+        fields_to_remove = ["E-Mail", "URL", "Telefon", "Fax"]
 
-""" Example use case for later
-admin_db = Database(uri=ADMIN_MONGODB_URI, dbname=MONGODB_NAME)
-admin_db.save_customer(customer_data)
-"""
+        begruenungs_art_fields = {
+            "Extensiv": {"Fläche (Minimum)": 200, "Fläche (Maximum)": 100000},
+            "Intensiv": {"Fläche (Minimum)": 100, "Fläche (Maximum)": 100000},
+            "Verkehrsdach": {"Fläche (Minimum)": 100, "Fläche (Maximum)": 100000}
+        }
+
+        for document in collection.find({}):
+            update_fields = {}
+            for field in fields_to_remove:
+                if field in document:
+                    update_fields[field] = None
+
+            bga_new = {}
+            for key, values in begruenungs_art_fields.items():
+                if key not in document.get("Begrünungsart", {}):
+                    bga_new[f"Begrünungsart.{key}"] = values
+                else:
+                    for field, replacement in values.items():
+                        if document["Begrünungsart"][key].get(field) in [None, 0, "", "null"]:
+                            bga_new[f"Begrünungsart.{key}.{field}"] = replacement
+
+            if update_fields or bga_new:
+                update = {"$unset": update_fields, "$set": bga_new}
+                collection.update_one({"_id": document["_id"]}, update)
+
+        #print("Documents updated successfully.")

@@ -1,1 +1,1 @@
-__version__ = "1.0.5"  # current version
+__version__ = "1.0.7"  # current version

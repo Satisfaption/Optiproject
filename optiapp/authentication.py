@@ -1,10 +1,27 @@
+import sys
+
 from pymongo import MongoClient, errors
 from urllib.parse import quote_plus
 from dotenv import load_dotenv
 import os
 
 
-load_dotenv()
+def load_environment():
+    # Determine the directory where the executable is running from
+    extDataDir = os.getcwd()
+    if getattr(sys, 'frozen', False):
+        # Running in a PyInstaller bundle
+        extDataDir = sys._MEIPASS
+
+    # Construct the path to the .env file
+    dotenv_path = os.path.join(extDataDir, '.env')
+
+    # Load environment variables from the .env file
+    load_dotenv(dotenv_path=dotenv_path)
+
+
+# Call the function to load environment variables
+load_environment()
 MONGODB_URI_TEMPLATE = os.getenv('MONGODB_URI_TEMPLATE')
 MONGODB_URI_GUEST = os.getenv('MONGODB_URI_GUEST')
 MONGODB_NAME = os.getenv('MONGODB_NAME')

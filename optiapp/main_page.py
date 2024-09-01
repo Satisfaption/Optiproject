@@ -1,7 +1,7 @@
 import customtkinter as ctk
 
 from baselayout import BaseLayout
-from customtable import CustomTable
+from customwidgets import CustomTable, CustomEntryLabel
 from functions import get_filtered_data
 from database import Database
 
@@ -17,49 +17,61 @@ class MainPage(BaseLayout):
         # custom_table is a custom-made 'table' consisting of header & content frame with labels for text
         # the content will be populated by the populate_table method which produces the table_data attribute
         self.custom_table = None
-        self.table_data = None
+        self.filtered_data = None
         # the 4 entry fields capture user input data, so does the greening_option but with 3 limited choices
         self.greening_option = None
         self.ort_entry = None
         self.plz_entry = None
         self.street_entry = None
+        self.flaeche_entry = None
+        # button to change DB documents only visible to authenticated users
+        self.db_button = None
         # generate widgets
         self.setup_side_content()
         self.setup_table_content()
         self.setup_footer_content()
+        #self.setup_header_content()
+        #self.update_button_visibility()
 
     def setup_side_content(self):
         # 7 rows, 1 for each widget. 1 column
         self.side_frame.columnconfigure(0, weight=1)
-        self.side_frame.rowconfigure(0, weight=0)
+        self.side_frame.rowconfigure(0, weight=1)
         self.side_frame.rowconfigure(1, weight=1)
         self.side_frame.rowconfigure(2, weight=1)
         self.side_frame.rowconfigure(3, weight=1)
         self.side_frame.rowconfigure(4, weight=1)
         self.side_frame.rowconfigure(5, weight=1)
         self.side_frame.rowconfigure(6, weight=1)
+        self.side_frame.rowconfigure(7, weight=1)
+        self.side_frame.rowconfigure(8, weight=1)
 
         side_label = ctk.CTkLabel(self.side_frame, text="Such-Optionen")
         side_label.grid(row=0, column=0)
-        self.street_entry = ctk.CTkEntry(self.side_frame, placeholder_text="Straße")
-        self.street_entry.grid(row=1, column=0)
-        self.plz_entry = ctk.CTkEntry(self.side_frame, placeholder_text="Postleitzahl")
-        self.plz_entry.grid(row=2, column=0)
-        self.ort_entry = ctk.CTkEntry(self.side_frame, placeholder_text="Ort")
-        self.ort_entry.grid(row=3, column=0)
+        self.street_entry = CustomEntryLabel(self.side_frame, placeholder_text="Straße")
+        self.street_entry.grid(row=3, column=0)
+        self.plz_entry = CustomEntryLabel(self.side_frame, placeholder_text="Postleitzahl")
+        self.plz_entry.grid(row=1, column=0)
+        self.ort_entry = CustomEntryLabel(self.side_frame, placeholder_text="Ort")
+        self.ort_entry.grid(row=4, column=0)
+        self.flaeche_entry = CustomEntryLabel(self.side_frame, placeholder_text="Fläche")
+        self.flaeche_entry.grid(row=2, column=0)
+
+        collection = ["Partner", "Dachdecker", "Handel"]
+        self.greening_option = ctk.CTkOptionMenu(self.side_frame, values=collection)  # command later
+        self.greening_option.grid(row=5, column=0)
+        options = ["Extensiv", "Intensiv", "Verkehrsdach"]
+        self.greening_option = ctk.CTkOptionMenu(self.side_frame, values=options)
+        self.greening_option.grid(row=6, column=0)
 
         side_button = ctk.CTkButton(self.side_frame, text="Suchen", command=self.populate_table)
-        side_button.grid(row=4, column=0)
-        options = ["Extensiv", "Intensiv", "Verkehrsdach"]
-        self.greening_option = ctk.CTkOptionMenu(self.side_frame, values=options, command=self.on_greening_option_change)
-        self.greening_option.set("Begrünungsart")
-        self.greening_option.grid(row=5, column=0)
+        side_button.grid(row=7, column=0)
 
     def setup_table_content(self):
         for widget in self.main_frame.winfo_children():
             widget.destroy()
-        columns = ['Name', 'Pisa', 'Begrünungsart', 'Fläche Min (m²)', 'Fläche Max (m²)', 'PLZ', 'Ort', 'Entfernung']
-        widths = [120, 120, 120, 120, 120, 100, 100, 100]
+        columns = ['Name', 'Pisa', 'Gebietsleiter', 'PLZ', 'Ort', 'Entfernung']
+        widths = [300, 120, 160, 60, 160, 100]
         self.custom_table = CustomTable(self.main_frame, columns, widths)
         self.custom_table.grid(row=0, column=0, padx=5, pady=5, sticky='nesw')
 
@@ -74,6 +86,12 @@ class MainPage(BaseLayout):
         pisa_button = ctk.CTkButton(self.footer_frame, text="Pisa Werte kopieren", command=self.copy_pisa_values)
         pisa_button.grid(row=0, column=1)
 
+    """def setup_header_content(self):
+        #self.header_frame.columnconfigure(0, weight=1)
+        #self.header_frame.rowconfigure(0, weight=1)
+        self.db_button = ctk.CTkButton(self.header_frame, text="Datenbank anpassen", command=self.update_db)
+        self.db_button.grid(row=0, column=1)"""
+
     def populate_table(self):
         # Clear existing data
         self.custom_table.clear_table()
@@ -81,59 +99,50 @@ class MainPage(BaseLayout):
         street = self.street_entry.get()
         plz = self.plz_entry.get()
         town = self.ort_entry.get()
-        greenings = self.greening_option.get()
+        flaeche = self.flaeche_entry.get()
+        greening_selection = self.greening_option.get()
         if not plz:
             self.show_warning("Es wird mindestens eine Postleitzahl benötigt um die Suche zu starten.")
             return
+
+        if flaeche:
+            try:
+                flaeche = int(flaeche)  # Convert area to integer
+            except ValueError:
+                self.show_warning("Der Bereich muss eine Ganzzahl sein.")
+                return
+        else:
+            flaeche = None  # to do if fläche = leer
+
         query = {}
         data_all = self.db.get_table_data(query)
 
-        self.table_data = get_filtered_data(street, plz, town, data_all)
+        self.filtered_data = get_filtered_data(street, plz, town, flaeche, data_all, greening_selection)
 
-        self.filter_table(self.table_data, greenings)
+        for partner_id, partner_info in self.filtered_data.items():
+            name = partner_info['Name']
+            pisa = partner_info['Pisa']
+            plz = partner_info['Postleitzahl']
+            ort = partner_info['Ort']
+            gl = partner_info['Gebietsleiter']
 
-    def filter_table(self, data, filter_option):
-        self.custom_table.clear_table()
-        filtered_data = {}
-        if not filter_option or filter_option == "Begrünungsart":
-            # If no greening type is selected, return all data
-            for partner_id, partner_info in data.items():
-                name = partner_info['Name']
-                pisa = partner_info['Pisa']
-                plz = partner_info['Postleitzahl']
-                ort = partner_info['Ort']
-
+            # If no greening type is selected or all types are selected, add all distances
+            if not greening_selection or greening_selection == "Begrünungsart":
                 for greening_type, greening_info in partner_info['Distances'].items():
-                    flache_min = greening_info['Fläche (Minimum)']
-                    flache_max = greening_info['Fläche (Maximum)']
                     distance_km = greening_info['Distance_km']
-                    row_data = [name, pisa, greening_type, flache_min, flache_max, plz, ort, distance_km]
+                    row_data = [name, pisa, gl, plz, ort, distance_km]
                     self.custom_table.add_row(row_data)
-                    if partner_id not in filtered_data:
-                        filtered_data[partner_id] = partner_info
-        else:
-            # Filter data based on selected greening type
-            for partner_id, partner_info in data.items():
-                name = partner_info['Name']
-                pisa = partner_info['Pisa']
-                plz = partner_info['Postleitzahl']
-                ort = partner_info['Ort']
-
-                if filter_option in partner_info['Distances']:
-                    greening_info = partner_info['Distances'][filter_option]
-                    flache_min = greening_info['Fläche (Minimum)']
-                    flache_max = greening_info['Fläche (Maximum)']
+            else:
+                # If a specific greening type is selected, only add data for that type
+                if greening_selection in partner_info['Distances']:
+                    greening_info = partner_info['Distances'][greening_selection]
                     distance_km = greening_info['Distance_km']
-                    row_data = [name, pisa, filter_option, flache_min, flache_max, plz, ort, distance_km]
+                    row_data = [name, pisa, gl, plz, ort, distance_km]
                     self.custom_table.add_row(row_data)
-                    if partner_id not in filtered_data:
-                        filtered_data[partner_id] = partner_info
 
-        self.update_footer(filtered_data)
+            # Update footer with the final filtered data
 
-    def on_greening_option_change(self, selected_greening):
-        if self.table_data:
-            self.filter_table(self.table_data, selected_greening)
+        self.update_footer(self.filtered_data)
 
     def update_footer(self, filtered_data):
         # Clear existing footer data
@@ -142,14 +151,13 @@ class MainPage(BaseLayout):
 
             # Concatenate Pisa values separated by commas
             pisa_values = [data['Pisa'] for data in filtered_data.values() if data['Pisa'] is not None]
-            pisa_text = ", ".join(pisa_values)
+            pisa_text = " | ".join(pisa_values)
             self.pisa_label = ctk.CTkLabel(self.pisa_frame, text=pisa_text, justify="left", wraplength=700)
             self.pisa_label.grid(row=0, column=0)
 
     def copy_pisa_values(self):
         if self.pisa_label:
             pisa_text = self.pisa_label.cget("text")
-            print(f"Copying to clipboard: {pisa_text}")
             # Copy the text from the footer_label to the clipboard
             self.master.clipboard_clear()
             self.master.clipboard_append(self.pisa_label.cget("text"))
@@ -180,3 +188,12 @@ class MainPage(BaseLayout):
 
         # Ensure the popup is closed properly
         warning_popup.protocol("WM_DELETE_WINDOW", warning_popup.destroy)
+
+    def update_db(self):
+        self.db.update_documents()
+
+    '''def update_button_visibility(self):
+        if self.auth_manager.get_current_user() == 'Guest':
+            self.db_button.grid_forget()  # Hide the button
+        else:
+            self.db_button.grid()  # Show the button'''

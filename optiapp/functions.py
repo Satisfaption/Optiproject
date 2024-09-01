@@ -12,6 +12,7 @@ from pymongo.errors import ServerSelectionTimeoutError
 load_dotenv()
 MONGODB_URI_GUEST = os.getenv('MONGODB_URI_GUEST')
 OPENROUTE_API_KEY = os.getenv('OPENROUTE_API_KEY')
+ORS = os.getenv('ORS')
 
 
 def calculate_distance(lat1, lon1, lat2, lon2):
@@ -31,6 +32,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
 
 def get_coordinates(street, plz, town):
+    time.sleep(1)
     if street is None:
         street = ''
     address = f"{street}, {plz}, {town}"
@@ -55,6 +57,7 @@ def update_coordinates(street, plz, town, result_label):
 def calculate_driving_distance(start_lat, start_lon, end_lat, end_lon):
     api_key = OPENROUTE_API_KEY  # Replace with your API key
     url = f'https://api.openrouteservice.org/v2/directions/driving-car?api_key={api_key}&start={start_lon},{start_lat}&end={end_lon},{end_lat}'
+    #url = f'{ORS}start={start_lon},{start_lat}&end={end_lon},{end_lat}'
     max_retries = 3
     retry_delay = 0.5  # seconds
 
@@ -90,7 +93,7 @@ def calculate_driving_distance(start_lat, start_lon, end_lat, end_lon):
     return None, None
 
 
-def get_filtered_data(street, plz, town, table_data):
+def get_filtered_data(street, plz, town, flaeche, table_data, greening_selection):
     # Calculate user's coordinates
     user_lat, user_lon = get_coordinates(street, plz, town)
 
@@ -100,39 +103,62 @@ def get_filtered_data(street, plz, town, table_data):
         name = details['Name']
         pisa = details['Pisa']
         ort = details['Ort']
-        plz = details['Postleitzahl']
+        zipcode = details['Postleitzahl']
+        gebietsleiter = details['Gebietsleiter']
         partner_lat = details['Latitude']
         partner_long = details['Longitude']
         begruenungsart_data = details['Begrünungsart']
+        area_matches = True  # assumption of true
 
-        for greening_type, greening_details in begruenungsart_data.items():
-            entfernung = greening_details.get('Entfernung')
-            if entfernung is not None:
-                entfernung = float(entfernung)
+        if greening_selection not in begruenungsart_data:
+            continue
 
-                # Calculate the haversine distance
-                haversine_distance = calculate_distance(user_lat, user_lon, partner_lat, partner_long)
+        greening_details = begruenungsart_data[greening_selection]
 
-                if haversine_distance <= entfernung:
-                    print(f"{name} im Ort {ort} liegt mit {haversine_distance} km im Umkreis.")
-                    distance_road, _ = calculate_driving_distance(user_lat, user_lon, partner_lat, partner_long)
-                    if distance_road is not None:
-                        distance_km = distance_road / 1000
-                        distance_km = round(distance_km, 2)
-                        if distance_km <= entfernung:
-                            if kundennummer not in filtered_data:
-                                filtered_data[kundennummer] = {
-                                    'Name': name,
-                                    'Pisa': pisa,
-                                    'Postleitzahl': plz,
-                                    'Ort': ort,
-                                    'Distances': {}
-                                }
-                            filtered_data[kundennummer]['Distances'][greening_type] = {
-                                'Fläche (Minimum)': greening_details['Fläche (Minimum)'],
-                                'Fläche (Maximum)': greening_details['Fläche (Maximum)'],
-                                'Distance_km': distance_km
+        if flaeche is not None:
+            area_matches = False
+            flaeche_min = greening_details.get('Fläche (Minimum)')
+            flaeche_max = greening_details.get('Fläche (Maximum)')
+            if flaeche_min is not None and flaeche_max is not None:
+                try:
+                    flaeche_min = float(flaeche_min)
+                    flaeche_max = float(flaeche_max)
+                    if flaeche_min <= flaeche <= flaeche_max:
+                        area_matches = True
+                except ValueError:
+                    continue  # Skip to the next item if area values are invalid
+
+        if not area_matches:
+            continue  # Skip distance calculation if area does not match
+
+            # Proceed with distance calculations only if area check is passed or area filter is not used
+        entfernung = greening_details.get('Entfernung')
+        if entfernung is not None:
+            entfernung = float(entfernung)
+
+            # Calculate the haversine distance
+            haversine_distance = calculate_distance(user_lat, user_lon, partner_lat, partner_long)
+
+            if haversine_distance <= entfernung:
+                distance_road, _ = calculate_driving_distance(user_lat, user_lon, partner_lat, partner_long)
+                if distance_road is not None:
+                    distance_km = distance_road / 1000
+                    distance_km = round(distance_km, 2)
+                    if distance_km <= entfernung:
+                        if kundennummer not in filtered_data:
+                            filtered_data[kundennummer] = {
+                                'Name': name,
+                                'Pisa': pisa,
+                                'Gebietsleiter': gebietsleiter,
+                                'Postleitzahl': zipcode,
+                                'Ort': ort,
+                                'Distances': {}
                             }
+                        filtered_data[kundennummer]['Distances'][greening_selection] = {
+                            'Fläche (Minimum)': greening_details['Fläche (Minimum)'],
+                            'Fläche (Maximum)': greening_details['Fläche (Maximum)'],
+                            'Distance_km': distance_km
+                        }
 
     return filtered_data
 
@@ -151,11 +177,11 @@ def get_mongo_client(uri, retries=5, delay=5):
 
 
 def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
+    """ Get the absolute path to a resource, works for dev and PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = getattr(sys, '_MEIPASS', os.path.abspath(".."))
+        base_path = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
     except Exception:
-        base_path = os.path.abspath("..")
+        base_path = os.path.abspath(os.path.dirname(__file__))
 
     return os.path.join(base_path, relative_path)
