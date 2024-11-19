@@ -1,0 +1,27 @@
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore virtual environments
+venv/
+env/
+
+# Ignore PyCharm project files
+.idea/
+
+# Ignore logs and temporary files
+*.log
+*.tmp
+
+# Ignore build artifacts
+dist/
+build/
+*.egg-info/
+*.spec
+
+# misc
+*.yml
+*.exe
+*.zip
+*.tar.gz
+.env

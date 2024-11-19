@@ -1,0 +1,17 @@
+<RCC>
+  <qresource>
+    <file>Main_Window/UI/Icons/menu_white.png</file>
+    <file>Main_Window/UI/Icons/add student.png</file>
+    <file>Main_Window/UI/Icons/dashboardsmall1.png</file>
+    <file>Main_Window/UI/Icons/dashboardsmall2.png</file>
+    <file>Main_Window/UI/Icons/delete.png</file>
+    <file>Main_Window/UI/Icons/edit.png</file>
+    <file>Main_Window/UI/Icons/excel.png</file>
+    <file>Main_Window/UI/Icons/menu.png</file>
+    <file>Main_Window/UI/Icons/pdf.png</file>
+    <file>Main_Window/UI/Icons/search.png</file>
+    <file>Main_Window/UI/Icons/settingssmall1.png</file>
+    <file>Main_Window/UI/Icons/signoutsmall1.png</file>
+    <file>Main_Window/UI/Icons/studentssmall1.png</file>
+  </qresource>
+</RCC>
