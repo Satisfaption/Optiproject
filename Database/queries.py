@@ -184,7 +184,10 @@ class DatabaseQueries:
         try:
             self.db.get_collection("Änderungsprotokoll").update_one(
                 {"timestamp": datetime.now().date().isoformat()},
-                {"$inc": {"ors_usage_count": count}},
+                {
+                    "$set": {"type": "ors"},
+                    "$inc": {"ors_usage_count": count}
+                },
                 upsert=True
             )
         except Exception as e:

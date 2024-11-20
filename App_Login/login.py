@@ -225,6 +225,7 @@ class LoginWindow(QMainWindow):
                 self.password_edit.setFocus()
                 return
 
+            self.setCursor(Qt.CursorShape.WaitCursor)
             success, message = self.auth_manager.authenticate_user(username, password)
 
             if success:
@@ -250,6 +251,9 @@ class LoginWindow(QMainWindow):
                 f"Ein unerwarteter Fehler ist aufgetreten:\n{str(e)}"
             )
             self.password_edit.clear()
+
+        finally:
+            self.setCursor(Qt.CursorShape.ArrowCursor)
 
     def _handle_guest_login(self):
         """Handle guest login attempt"""

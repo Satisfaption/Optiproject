@@ -25,7 +25,7 @@ class Logger:
             "type": "user"  # identifier for user actions
         }
         self.db.get_collection("Änderungsprotokoll").insert_one(log_entry)
-        self.logger.info(f"{user} {action} {target} at {log_entry['timestamp']}")
+        self.logger.info(f"{user} hat {target} {action} um {log_entry['timestamp']}")
 
     def log_partner_action(self, user, action, target):
         """partner logs format"""
@@ -37,4 +37,4 @@ class Logger:
             "type": "partner"  # identifier for partner actions
         }
         self.db.get_collection("Änderungsprotokoll").insert_one(log_entry)
-        self.logger.info(f"{user} {action} {target} at {log_entry['timestamp']}")
+        self.logger.info(f"{user} hat {target} {action} um {log_entry['timestamp']}")

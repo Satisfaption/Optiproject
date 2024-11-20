@@ -525,6 +525,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.button_copy_pisa = QPushButton("Pisa kopieren")
         self.button_copy_pisa.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.button_copy_pisa.setMinimumWidth(100)
+        self.button_copy_pisa.setStyleSheet("""
+                QPushButton {
+                    background-color: #4CAF50;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                }
+                QPushButton:hover {
+                    background-color: #45a049;
+                }
+                QPushButton:pressed {
+                    background-color: #0D47A1;
+                }
+                QPushButton:disabled {
+                    background-color: #BDBDBD;
+                }
+            """)
 
         details_layout.addWidget(self.button_copy_pisa)
 
@@ -825,6 +843,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.partner_add_btn = QPushButton("Neuer Partner")
         self.partner_add_btn.setMinimumHeight(30)
         self.partner_add_btn.setFixedWidth(150)
+        self.partner_add_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #4CAF50;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                }
+                QPushButton:hover {
+                    background-color: #45a049;
+                }
+                QPushButton:pressed {
+                    background-color: #0D47A1;
+                }
+                QPushButton:disabled {
+                    background-color: #BDBDBD;
+                }
+            """)
 
         search_layout.addWidget(self.partner_search)
         search_layout.addStretch()
@@ -1108,12 +1144,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 if partner_data and '_id' in partner_data:
                     self.db_queries.update_partner(partner_data['_id'], new_partner_data)
                     QMessageBox.information(self, "Information", "Partner Daten wurden aktualisiert.")
-                    self.logger.log_partner_action(self.current_user, "updated", new_partner_data['Name'])
+                    self.logger.log_partner_action(self.current_user, "aktualisiert", new_partner_data['Name'])
                     self._refresh_logs()
                 else:
                     self.db_queries.insert_partner(new_partner_data)
                     QMessageBox.information(self, "Information", "Neuer Partner wurde erstellt.")
-                    self.logger.log_partner_action(self.current_user, "created", new_partner_data['Name'])
+                    self.logger.log_partner_action(self.current_user, "erstellt", new_partner_data['Name'])
                     self._refresh_logs()
                 self._load_partners()
             except Exception as e:
@@ -1160,7 +1196,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 partner_name = partner_item.text()
                 partner_id = partner_item.data(Qt.UserRole)
 
-                self.logger.log_partner_action(self.current_user, "deleted", partner_name)
+                self.logger.log_partner_action(self.current_user, "gelöscht", partner_name)
                 self._refresh_logs()
                 self.db_queries.delete_partner(partner_id)
                 self._load_partners()
@@ -1574,6 +1610,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.partner_logs_tab.setReadOnly(True)
         log_tab.addTab(self.partner_logs_tab, 'Partner Protokoll')
 
+        self.ors_logs_tab = QTextEdit()
+        self.ors_logs_tab.setReadOnly(True)
+        log_tab.addTab(self.ors_logs_tab, 'ORS Statistik')
+
         self._refresh_logs()
         logs_group.setStyleSheet("""
                         QGroupBox {
@@ -1784,7 +1824,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.db_queries.create_database_user(username, new_password, roles)
             QMessageBox.information(self, "Erfolg", f"Benutzer {username} erfolgreich erstellt.")
             self._load_users()
-            self.logger.log_user_action(self.current_user, "created", username)
+            self.logger.log_user_action(self.current_user, "erstellt", username)
             self._refresh_logs()
         except Exception as e:
             QMessageBox.critical(self, "Fehler", f"Fehler beim Erstellen des Benutzers: {str(e)}")
@@ -1826,7 +1866,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         try:
             self.db_queries.update_database_user(selected_user, new_password, roles)
             QMessageBox.information(self, "Erfolg", f"Benutzer {selected_user} erfolgreich aktualisiert.")
-            self.logger.log_user_action(self.current_user, "updated", selected_user)
+            self.logger.log_user_action(self.current_user, "aktualisiert", selected_user)
             self._refresh_logs()
 
             if self.current_user == selected_user:
@@ -1848,7 +1888,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         try:
             self.db_queries.delete_database_user(selected_user)
             QMessageBox.information(self, "Erfolg", f"Benutzer {selected_user} erfolgreich gelöscht.")
-            self.logger.log_user_action(self.current_user, "deleted", selected_user)
+            self.logger.log_user_action(self.current_user, "gelöscht", selected_user)
             self._refresh_logs()
 
             if self.current_user == selected_user:
@@ -1915,9 +1955,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.delete_button.clicked.connect(self._prompt_for_password_and_delete_user)
 
     def _refresh_logs(self):
-        """Load latest logs."""
+        """Load latest logs"""
         self._display_user_logs()
         self._display_partner_logs()
+        self._display_ors_logs()
 
     def _display_user_logs(self):
         """get & set user logs"""
@@ -1931,16 +1972,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             target = log['target']
 
             # Color coding based on action
-            if action == "created":
+            if action == "erstellt":
                 action_color = "green"
-            elif action == "updated":
+            elif action == "aktualisiert":
                 action_color = "blue"
-            elif action == "deleted":
+            elif action == "gelöscht":
                 action_color = "red"
             else:
                 action_color = "black"
 
-            user_logs_text += f'<span>{timestamp}: {user} <span style="color: {action_color};">{action}</span> {target}</span><br>'
+            user_logs_text += f'<span>{timestamp}: <b>{user}</b> hat <b>{target}</b> <span style="color: {action_color};">{action}</span></span><br>'
 
         self.user_logs_tab.setHtml(user_logs_text)
 
@@ -1956,18 +1997,30 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             target = log['target']
 
             # Color coding based on action
-            if action == "created":
+            if action == "erstellt":
                 action_color = "green"
-            elif action == "updated":
+            elif action == "aktualisiert":
                 action_color = "blue"
-            elif action == "deleted":
+            elif action == "gelöscht":
                 action_color = "red"
             else:
                 action_color = "black"
 
-            partner_logs_text += f'<span>{timestamp}: {user} <span style="color: {action_color};">{action}</span> {target}</span><br>'
+            partner_logs_text += f'<span>{timestamp}: <b>{user}</b> hat <b>{target}</b> <span style="color: {action_color};">{action}</span></span><br>'
 
         self.partner_logs_tab.setHtml(partner_logs_text)
+
+    def _display_ors_logs(self):
+        """ORS 'logs' to show a history of daily usage"""
+        logs = self.db.get_collection("Änderungsprotokoll").find({"type": "ors"})
+        ors_logs_text = ""
+
+        for log in logs:
+            timestamp = log['timestamp']
+            ors = log['ors_usage_count']
+            ors_logs_text += f'<span>{timestamp}: {ors}</span><br>'
+
+        self.ors_logs_tab.setHtml(ors_logs_text)
 
     # === Event Handlers ===
     def resizeEvent(self, event):
