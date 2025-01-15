@@ -667,7 +667,7 @@ QPushButton:checked {
 }</string>
           </property>
           <property name="text">
-           <string>  Suche</string>
+           <string>   Suche</string>
           </property>
           <property name="icon">
            <iconset>

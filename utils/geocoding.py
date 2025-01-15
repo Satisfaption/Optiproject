@@ -1,11 +1,12 @@
 import time
 import os
+import requests
+
 from geopy.geocoders import Nominatim
 from math import radians, sin, cos, sqrt, atan2
-import requests
 from utils.env_loader import EnvVars
+from functools import lru_cache
 
-OPENROUTE_API_KEY = os.getenv(EnvVars.ORS_API_KEY)
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     """Calculate Haversine distance"""
@@ -23,75 +24,89 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     distance = 6371 * c  # Radius of the Earth in kilometers
     return distance
 
-def get_coordinates(plz: str, street: str = None, town: str = None) -> tuple:
-    """Get coordinates from address information"""
-    time.sleep(1)  # Nominatim rate limit of 1 call per sec
+@lru_cache(maxsize=1000)
+def get_coordinates_cached(address: str) -> tuple:
+    """Geocoding using Nominatim with caching
 
+    Args:
+        address (str): Full address to geocode.
+
+    Returns:
+        tuple: (latitude, longitude) or (None, None) if not found.
+    """
+    user_agent = os.getenv(EnvVars.USER_AGENT)
+    geolocator = Nominatim(user_agent=user_agent)
+
+    time.sleep(1)  # Rate-limit: 1 request per second
+
+    try:
+        location = geolocator.geocode(address)
+        if location:
+            return location.latitude, location.longitude
+    except Exception as e:
+        print(f"Geocoding error for address '{address}': {e}")
+
+    return None, None
+
+def get_coordinates(plz: str, street: str = None, town: str = None) -> tuple:
+    """Build address for Nominatim
+
+    Args:
+        plz (str): Postal code.
+        street (str, optional): Street name.
+        town (str, optional): Town name.
+
+    Returns:
+        tuple: (latitude, longitude) or (None, None) if not found.
+    """
     address_parts = []
     if street:
         address_parts.append(street)
     address_parts.append(str(plz))
     if town:
         address_parts.append(town)
-    address_parts.append("Germany")  # Add country for better accuracy
+    address_parts.append("Germany")  # country for better accuracy
 
     address = ", ".join(address_parts)
-
-    geolocator = Nominatim(user_agent="my_geocoder")
-    try:
-        location = geolocator.geocode(address)
-        if location:
-            return location.latitude, location.longitude
-    except Exception as e:
-        print(f"Geocoding error: {e}")
-
-    return None, None
+    return get_coordinates_cached(address)
 
 def calculate_driving_distance(start_lat, start_lon, end_lat, end_lon):
-    """
-    Calculate driving distance between two points using OpenRouteService API.
+    """Calculate driving distance between two points using OpenRouteService API
 
     Args:
-        start_lat (float): Latitude of the starting point.
-        start_lon (float): Longitude of the starting point.
-        end_lat (float): Latitude of the destination.
-        end_lon (float): Longitude of the destination.
+        start_lat (float): Latitude of the starting point
+        start_lon (float): Longitude of the starting point
+        end_lat (float): Latitude of the destination
+        end_lon (float): Longitude of the destination
 
     Returns:
-        float: Distance in meters, or None if failed.
+        Tuple of (Distance, Error)
+        Distance: Distance in meters (float), or None if failed
+        Error: HTTPError Code, or None if failed
     """
-    api_key = OPENROUTE_API_KEY
-    url = f'https://api.openrouteservice.org/v2/directions/driving-car?api_key={api_key}&start={start_lon},{start_lat}&end={end_lon},{end_lat}'
-    #url = f'{ORS}start={start_lon},{start_lat}&end={end_lon},{end_lat}'
+    api_key = os.getenv(EnvVars.ORS_API_KEY)
+    ORS = os.getenv(EnvVars.ORS_API_KEY)
+    if not api_key:
+        raise RuntimeError("OpenRouteService API key not found. Please check your environment configuration.")
+    #url = f'https://api.openrouteservice.org/v2/directions/driving-car?api_key={api_key}&start={start_lon},{start_lat}&end={end_lon},{end_lat}'
+    url = f'{ORS}start={start_lon},{start_lat}&end={end_lon},{end_lat}'
     max_retries = 3
-    retry_delay = 0.5
 
     for attempt in range(max_retries):
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=5)
             response.raise_for_status()
             data = response.json()
 
             if 'features' in data and data['features']:
                 distance = data['features'][0]['properties']['segments'][0]['distance']
-                return distance
+                return distance, None  # Return distance and (no) error message
             else:
-                return None
-        except requests.exceptions.HTTPError as http_err:
-            if response.status_code == 503 and attempt < max_retries - 1:
-                print(
-                    f"503 error occurred, retrying in {retry_delay} seconds... (attempt {attempt + 1} of {max_retries})")
-                time.sleep(retry_delay)
-                retry_delay *= 2
-            else:
-                print(f"HTTP error occurred: {http_err}")
-                break
-        except requests.exceptions.RequestException as req_err:
-            print(f"Request error occurred: {req_err}")
-            break
-        except ValueError as json_err:
-            print(f"JSON decode error occurred: {json_err}")
-            print("Response content:", response.text)
-            break
+                return None, response.status_code  #"No distance data returned from the server."
 
-    return None
+        except requests.exceptions.ConnectionError:
+            return None, 503
+        except Exception as e:
+            return None, getattr(e.response, 'status_code', None) if isinstance(e, requests.exceptions.HTTPError) else None
+
+    return None, "Unknown error occurred."
