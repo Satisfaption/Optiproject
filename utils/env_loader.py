@@ -8,6 +8,7 @@ class EnvVars:
     URI_GUEST = 'MONGODB_URI_GUEST'
     DB_NAME = 'MONGODB_NAME'
     ORS_API_KEY = 'OPENROUTE_API_KEY'
+    USER_AGENT = 'USER_AGENT'
 
 
 def load_environment():
@@ -40,6 +41,7 @@ def verify_environment():
     uri_guest = os.getenv(EnvVars.URI_GUEST)
     db_name = os.getenv(EnvVars.DB_NAME)
     ors_api_key = os.getenv(EnvVars.ORS_API_KEY)
+    user_agent = os.getenv(EnvVars.USER_AGENT)
 
     errors = []
 
@@ -51,6 +53,8 @@ def verify_environment():
         errors.append("Missing database name")
     if not ors_api_key:
         errors.append("Missing OpenRouteService API key")
+    if not user_agent:
+        errors.append("Missing user_agent for Nominatim")
 
     if errors:
         raise RuntimeError("\n".join(errors))

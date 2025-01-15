@@ -20,17 +20,11 @@ class DataFilter:
 
         coordinates = None
         if plz:
-            address_parts = []
-            if street:
-                address_parts.append(street)
-            address_parts.append(plz)
-            if town:
-                address_parts.append(town)
-
-            # calculate coordinates for entered address
-            coordinates = get_coordinates(" ".join(address_parts))
+            coordinates = get_coordinates(plz, street, town)
 
         filtered_data = {}
+        errors_4xx = {}
+        error_messages = []
 
         # Filter by distance if coordinates are available
         for kundennummer, details in table_data.items():
@@ -40,11 +34,13 @@ class DataFilter:
                 max_distance = greening_details.get('Entfernung')
 
                 if not max_distance:
+                    print(f"No max distance for {kundennummer}, skipping.")
                     continue
 
                 try:
                     max_distance = float(max_distance)
                 except (ValueError, TypeError) as e:
+                    print(f"Invalid max distance for {kundennummer}: {max_distance}, skipping.")
                     continue
 
                 # Get partner coordinates
@@ -52,32 +48,41 @@ class DataFilter:
                 partner_long = details.get('Longitude')
 
                 if not all([coordinates, partner_lat, partner_long]):
+                    print(f"Missing coordinates for {kundennummer}, skipping.")
                     continue
 
                 # Calculate straight-line distance first
                 user_lat, user_lon = coordinates
                 haversine_distance = calculate_distance(user_lat, user_lon, partner_lat, partner_long)
+                print(f"Haversine distance for {kundennummer}: {haversine_distance} km")
 
                 # If straight-line distance exceeds max, skip
                 if haversine_distance > max_distance:
+                    print(f"Haversine distance {haversine_distance} > {max_distance} for {kundennummer}, skipping.")
                     continue
 
                 # If distance is 0 (same location) or very small, use it directly
                 if haversine_distance < 0.1:
                     distance_km = haversine_distance
                 else:
-                    try:
-                        # Try to calculate road distance
-                        road_distance, _ = calculate_driving_distance(user_lat, user_lon, partner_lat, partner_long)
-                        if road_distance:
-                            distance_km = round(road_distance / 1000, 2)
+                    road_distance, status_code = calculate_driving_distance(user_lat, user_lon, partner_lat, partner_long)
+                    if road_distance:
+                        distance_km = round(road_distance / 1000, 2)
+                        print(f"Road distance for {kundennummer}: {distance_km} km")
+                    else:
+                        if status_code and 400 <= status_code < 500:
+                            errors_4xx[kundennummer] = f"Error {status_code}"
+                            continue
+                        elif status_code and status_code >= 500:
+                            error_messages.append('Server ist nicht erreichbar oder nicht online.')
+                            return None, error_messages
                         else:
-                            distance_km = round(haversine_distance, 2)
-                    except Exception as e:
-                        distance_km = round(haversine_distance, 2)
+                            print(f"Unknown error or no data for {kundennummer}, skipping.")
+                            continue
 
                 # Check if distance is within limit
                 if distance_km > max_distance:
+                    print(f"Distance {distance_km} > {max_distance} for {kundennummer}, skipping.")
                     continue
 
                 filtered_data[kundennummer] = {
@@ -92,10 +97,15 @@ class DataFilter:
                     'Distance': distance_km
                 }
                 self.ors_usage_count += 1
+                print(details['Ort'])
 
             except Exception:
+                print(f"Error processing {kundennummer}: {e}")
                 continue
+
+        if errors_4xx:
+            error_messages.append(f"4XX errors occurred for these items: {errors_4xx}")
 
         self.db_queries.save_ors_count(self.ors_usage_count)
 
-        return filtered_data
+        return filtered_data, error_messages

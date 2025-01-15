@@ -59,7 +59,7 @@ class DatabaseQueries:
 
         return query
 
-    def get_partner_by_id(self, partner_id: str) -> Dict | None:
+    def get_partner_by_id(self, partner_id: str, collection_name: str) -> Dict | None:
         """Get a single partner by ID"""
         try:
             try:
@@ -67,7 +67,7 @@ class DatabaseQueries:
             except Exception:
                 raise ValueError(f"Invalid partner_id: {partner_id}")
 
-            collection = self.db['Partner']
+            collection = self.db[collection_name]
             partner = collection.find_one({"_id": ObjectId(partner_object_id)})
             if partner:
                 # Convert ObjectId to string
@@ -91,10 +91,10 @@ class DatabaseQueries:
         except PyMongoError as e:
             raise QueryError(f"Failed to fetch partner: {e}")
 
-    def update_partner(self, partner_id: str, partner_data: Dict[str, Any]) -> None:
+    def update_partner(self, partner_id: str, partner_data: Dict[str, Any], collection_name: str) -> None:
         """Update an existing partner"""
         try:
-            collection = self.db['Partner']
+            collection = self.db[collection_name]
 
             update_data = partner_data.copy()
             update_data.pop('_id', None)
@@ -109,13 +109,13 @@ class DatabaseQueries:
         except PyMongoError as e:
             raise QueryError(f"Failed to update partner: {e}")
 
-    def insert_partner(self, partner_data: Dict[str, Any]) -> str:
+    def insert_partner(self, partner_data: Dict[str, Any], collection_name: str) -> str:
         """Insert a new partner"""
         try:
-            collection = self.db['Partner']
+            collection = self.db[collection_name]
 
             if not partner_data.get('Name'):
-                raise QueryError("Partner name is required")
+                raise QueryError("Name darf nicht leer sein.")
 
             partner_data.pop('_id', None)
 
@@ -128,10 +128,10 @@ class DatabaseQueries:
         except PyMongoError as e:
             raise QueryError(f"Failed to insert partner: {e}")
 
-    def delete_partner(self, partner_id: str) -> None:
+    def delete_partner(self, partner_id: str, collection_name: str) -> None:
         """Delete a partner"""
         try:
-            collection = self.db['Partner']
+            collection = self.db[collection_name]
 
             result = collection.delete_one({"_id": ObjectId(partner_id)})
 

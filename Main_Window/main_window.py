@@ -16,7 +16,10 @@ from Database.connection import DatabaseConnectionError, Database
 from Database.queries import DatabaseQueries
 from utils.geocoding import get_coordinates
 from utils.customs import parse_value
-from Styles.main_styles import *
+from Styles.general_styles import *
+from Styles.search_page_styles import *
+from Styles.partner_page_styles import *
+from Styles.settings_page_styles import *
 import json
 from bson import ObjectId
 
@@ -139,52 +142,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self._set_menu_visibility()
 
     def _setup_initial_styles(self):
-        """Set up initial styles for all buttons"""
-        self.centralwidget.setStyleSheet("""
-                QWidget {
-                    background-color: #f0f0f0;
-                }
-            """)
+        """Set up initial styles for all buttons (change from initial design from index.py)"""
+        self.centralwidget.setStyleSheet(CENTRAL_WIDGET)
 
-        self.widget_main.setStyleSheet("""
-                QWidget {
-                    background-color: #f0f0f0;
-                }
-                QFrame {
-                    background-color: white;
-                    border: 1px solid #cccccc;
-                }
-            """)
+        self.widget_main.setStyleSheet(STACKED_WIDGET)
 
-        self.frame_Filter.setStyleSheet("""
-                QFrame {
-                    background-color: white;
-                    border-right: 1px solid #cccccc;
-                }
-                QLineEdit {
-                    padding: 5px;
-                    border: 1px solid #cccccc;
-                    border-radius: 3px;
-                }
-                QComboBox {
-                    padding: 5px;
-                    border: 1px solid #cccccc;
-                    border-radius: 3px;
-                }
-                QPushButton {
-                    padding: 5px;
-                    background-color: #4CAF50;
-                    color: white;
-                    border: none;
-                    border-radius: 3px;
-                }
-                QPushButton:hover {
-                    background-color: #45a049;
-                }
-                QLabel {
-                    color: #666666;
-                }
-            """)
+        self.frame_Filter.setStyleSheet(FILTER_FRAME)
 
         icon_buttons = [
             self.pB_MenuIcon,
@@ -388,77 +351,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.vL_Filter.addWidget(self.pB_Suche)
 
         search_params_label = QLabel("Such Parameter")
-        search_params_label.setStyleSheet("""
-                    QLabel {
-                        font-weight: bold;
-                        font-size: 14px;
-                        margin-bottom: 10px;
-                        color: #333333;
-                    }
-                """)
+        search_params_label.setStyleSheet(HEADER_LABEL)
         self.vL_Filter.insertWidget(0, search_params_label)
         self.vL_Filter.insertStretch(1, 2)
 
         self.pB_Suche.setContentsMargins(0, 10, 0, 10)
-        self.pB_Suche.setStyleSheet("""
-                QPushButton {
-                    background-color: #4CAF50;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                }
-                QPushButton:hover {
-                    background-color: #45a049;
-                }
-                QPushButton:pressed {
-                    background-color: #0D47A1;
-                }
-                QPushButton:disabled {
-                    background-color: #BDBDBD;
-                }
-            """)
-
-        style = """
-            QLineEdit, QComboBox {
-                min-height: 25px;
-                margin: 2px 0;
-            }
-
-            QLabel {
-                margin-top: 5px;
-            }
-        """
-        self.widget.setStyleSheet(self.widget.styleSheet() + style)
-        self.frame_Filter.setStyleSheet("""
-                    QFrame {
-                        background-color: white;
-                        border: 1px solid #cccccc;
-                        border-radius: 4px;
-                    }
-                """)
-        self.widget.setStyleSheet("""
-                    QWidget {
-                        background-color: white;
-                    }
-                    QLineEdit, QComboBox {
-                        padding: 5px;
-                        border: 2px solid #cccccc;
-                        border-radius: 3px;
-                        background-color: white;
-                    }
-                    QPushButton {
-                        padding: 5px;
-                        background-color: #4CAF50;
-                        color: white;
-                        border: none;
-                        border-radius: 3px;
-                    }
-                    QLabel {
-                        color: #333333;
-                        border: none;
-                    }
-                """)
+        self.pB_Suche.setStyleSheet(SEARCH_BUTTON)
 
         self.vSpacer_Filter.changeSize(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
@@ -492,7 +390,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         ors_layout.setContentsMargins(5, 5, 5, 5)
 
         self.label_ors_title = QLabel("ORS Nutzung")
-        self.label_ors_title.setStyleSheet("font-size: 16px; font-weight: bold;")
+        self.label_ors_title.setStyleSheet(HEADER_LABEL)
         self.label_ors_usage = QLabel("0 / 2000")
         self.label_ors_usage.setStyleSheet("font-size: 14px;")
 
@@ -503,18 +401,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # PISA Values Section
         self.frame_Pisa = QFrame()
-        self.frame_Pisa.setStyleSheet("""
-                QFrame {
-                    border-left: 2px solid black;
-                    border-top: none;
-                    border-right: none;
-                    border-bottom: none;
-                }
-            """)
+        self.frame_Pisa.setStyleSheet(PISA_FRAME)
 
         self.label_pisa_values = QLabel("Pisa")
         self.label_pisa_values.setWordWrap(True)
-        self.label_pisa_values.setStyleSheet("font-size: 12px; border: none")
 
         pisa_layout = QVBoxLayout(self.frame_Pisa)
         pisa_layout.setContentsMargins(10, 5, 5, 5)
@@ -525,24 +415,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.button_copy_pisa = QPushButton("Pisa kopieren")
         self.button_copy_pisa.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.button_copy_pisa.setMinimumWidth(100)
-        self.button_copy_pisa.setStyleSheet("""
-                QPushButton {
-                    background-color: #4CAF50;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                }
-                QPushButton:hover {
-                    background-color: #45a049;
-                }
-                QPushButton:pressed {
-                    background-color: #0D47A1;
-                }
-                QPushButton:disabled {
-                    background-color: #BDBDBD;
-                }
-            """)
+        self.button_copy_pisa.setStyleSheet(PISA_BUTTON)
 
         details_layout.addWidget(self.button_copy_pisa)
 
@@ -557,14 +430,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.status_label = QLabel(self.tableView)
         self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet("""
-                QLabel {
-                    background-color: rgba(255, 255, 255, 0.9);
-                    padding: 10px;
-                    border-radius: 5px;
-                    font-size: 14px;
-                }
-            """)
+        self.status_label.setStyleSheet(STATUS_MESSAGE)
         self.status_label.hide()
 
         self._update_ors_display()
@@ -601,61 +467,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         header = self.tableView.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        header.setStyleSheet("""
-            QHeaderView::section {
-                background-color: #f0f0f0;
-                padding: 10px;
-                border: 1px solid #cccccc;
-                font-weight: bold;
-            }
-        """)
 
         self.tableView.setSortingEnabled(True)
         self.tableView.setAlternatingRowColors(True)
         self.tableView.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.tableView.setSelectionMode(QTableView.SelectionMode.MultiSelection)
         self.tableView.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        self.tableView.setStyleSheet("""
-                QTableView {
-                    gridline-color: #cccccc;
-                    background-color: white;
-                    alternate-background-color: #f9f9f9;
-                    selection-background-color: #0078d4;
-                    selection-color: white;
-                    border: 1px solid #cccccc;
-                }
-
-                QTableView::item {
-                    padding: 5px;
-                    border: none;
-                }
-
-                QTableView::item:selected {
-                    background-color: #0078d4;
-                    color: white;
-                }
-
-                QTableView::item:focus {
-                    background-color: #0078d4;
-                    color: white;
-                    border: none;
-                    outline: none;
-                }
-
-                QTableView::item:selected:active {
-                    background-color: #0078d4;
-                    color: white;
-                }
-
-                QTableView::item:selected:!active {
-                    background-color: #dadada;
-                    color: black;
-                }
-
-                QTableView::item:alternate {
-                    background-color: #f9f9f9;
-                }
-            """)
+        self.tableView.setStyleSheet(TABLE)
 
         # context menu (right click)
         self.tableView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -668,20 +486,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
         menu = QMenu(self)
-        menu.setStyleSheet("""
-                    QMenu {
-                        background-color: white;
-                        border: 1px solid #cccccc;
-                        padding: 5px;
-                    }
-                    QMenu::item {
-                        padding: 5px 20px;  /* Vertical, Horizontal padding */
-                        margin: 0px;
-                    }
-                    QMenu::item:selected {
-                        background-color: #e6e6e6;
-                    }
-                """)
+        menu.setStyleSheet(CONTEXT_MENU)
         copy_pisa_action = menu.addAction("Pisa kopieren")
         copy_zusatzinfo_action = menu.addAction("Kurzform kopieren")
         action = menu.exec(self.tableView.viewport().mapToGlobal(pos))
@@ -735,7 +540,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
             data_filter = DataFilter(self.db_queries)
 
-            filtered_data = data_filter.filter_data(
+            filtered_data, error_message = data_filter.filter_data(
                 plz=plz,
                 flaeche=flaeche,
                 begruenungsart=begruenungsart,
@@ -743,6 +548,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 street=street,
                 town=town
             )
+
+            if error_message:
+                QMessageBox.warning(self, "Fehler bei der Suche", "\n".join(error_message))
 
             if not filtered_data:
                 self.table_model.removeRows(0, self.table_model.rowCount())
@@ -836,32 +644,30 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Top Layout for Searchbar & add new
         search_layout = QHBoxLayout()
         self.partner_search = QLineEdit()
-        self.partner_search.setPlaceholderText("Partner suchen...")
+        self.partner_search.setPlaceholderText("Nach Name suchen...")
         self.partner_search.setFixedWidth(300)
         self.partner_search.setMinimumHeight(30)
 
-        self.partner_add_btn = QPushButton("Neuer Partner")
+        self.partner_add_btn = QPushButton("Eintrag erstellen")
         self.partner_add_btn.setMinimumHeight(30)
         self.partner_add_btn.setFixedWidth(150)
-        self.partner_add_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #4CAF50;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                }
-                QPushButton:hover {
-                    background-color: #45a049;
-                }
-                QPushButton:pressed {
-                    background-color: #0D47A1;
-                }
-                QPushButton:disabled {
-                    background-color: #BDBDBD;
-                }
-            """)
+        self.partner_add_btn.setStyleSheet(ADD_PARTNER_BUTTON)
 
+        # Collection selection
+        collection_label = QLabel("Geschäftstyp:")
+        collection_label.setStyleSheet(PARTNER_LABEL)
+        collection_selection = ['Partner', 'Dachdecker', 'Handel']
+        self.partner_collection_cb = QComboBox()
+        self.partner_collection_cb.setMinimumWidth(150)
+        self.partner_collection_cb.setMaximumWidth(150)
+        self.partner_collection_cb.setStyleSheet(PARTNER_COMBOBOX)
+
+        for coll in collection_selection:
+            self.partner_collection_cb.addItem(coll)
+
+        search_layout.addWidget(collection_label)
+        search_layout.addWidget(self.partner_collection_cb)
+        search_layout.addStretch()
         search_layout.addWidget(self.partner_search)
         search_layout.addStretch()
         search_layout.addWidget(self.partner_add_btn)
@@ -869,9 +675,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Table
         self.partner_table = QTableView()
-        self.partner_model = QStandardItemModel(0, 6)
+        self.partner_model = QStandardItemModel(0, 7)
         self.partner_model.setHorizontalHeaderLabels([
-            "Name", "Pisa", "PLZ", "Begrünungsart", "Fläche (Min-Max)", "Entfernung"
+            "Name", "Pisa", "PLZ", "Begrünungsart", "Fläche (Min-Max)", "Entfernung", "Kundennummer"
         ])
         self.partner_table.setModel(self.partner_model)
 
@@ -883,14 +689,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.partner_table.setSortingEnabled(True)
 
         header = self.partner_table.horizontalHeader()
-        header.setStyleSheet("""
-                    QHeaderView::section {
-                        background-color: #f0f0f0;
-                        padding: 5px;
-                        border: 1px solid #cccccc;
-                        font-weight: bold;
-                    }
-                """)
+        header.setStyleSheet(PARTNER_TABLE)
 
         layout.addWidget(self.partner_table)
 
@@ -898,25 +697,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.partner_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.partner_table.customContextMenuRequested.connect(self._show_context_menu)
 
+        self.partner_collection_cb.currentIndexChanged.connect(self._load_partners)  # combobox connect moved to after table
+
         self._load_partners()
 
     def _show_context_menu(self, position):
         """context menu for partner table with options to edit/delete"""
         menu = QMenu(self)
-        menu.setStyleSheet(""" 
-            QMenu {
-                background-color: white;
-                border: 1px solid #cccccc;
-                padding: 5px;
-            }
-            QMenu::item {
-                padding: 5px 20px;  /* Vertical, Horizontal padding */
-                margin: 0px;
-            }
-            QMenu::item:selected {
-                background-color: #e6e6e6;
-            }
-        """)
+        menu.setStyleSheet(PARTNER_MENU)
 
         edit_action = menu.addAction("Bearbeiten")
         delete_action = menu.addAction("Löschen")
@@ -937,8 +725,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.partner_model.removeRows(0, self.partner_model.rowCount())
             query = {}
             query_hash = self.db_queries._hash_query(query)
-
-            partners_data = self.db_queries.get_table_data(query_hash, 'Partner')
+            selected_collection = self.partner_collection_cb.currentText()
+            partners_data = self.db_queries.get_table_data(query_hash, selected_collection)
 
             if not partners_data:
                 return
@@ -948,6 +736,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 name_item.setData(partner.get('_id'), Qt.UserRole)  # store ID in UserRole
 
                 pisa_item = QStandardItem(str(partner.get('Pisa', '')))
+                kunde_item = QStandardItem(str(kundennummer))
                 plz_value = partner.get('Postleitzahl', '')
                 plz_item = QStandardItem(str(plz_value))
 
@@ -975,7 +764,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     entfernung_item = QStandardItem('-')
 
                 self.partner_model.appendRow(
-                    [name_item, pisa_item, plz_item, begruenungsart_item, flaeche_item, entfernung_item])
+                    [name_item, pisa_item, plz_item, begruenungsart_item, flaeche_item, entfernung_item, kunde_item])
                 self.partner_table.resizeRowToContents(row)
 
         except Exception as e:
@@ -999,7 +788,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def _show_partner_dialog(self, partner_data=None):
         """Dialog window to input new data for partners"""
         dialog = QDialog(self)
-        dialog.setWindowTitle("Partner Details")
+        dialog.setWindowTitle("Details - " + self.partner_collection_cb.currentText())
         dialog.setMinimumWidth(1000)
 
         # Main layout
@@ -1017,7 +806,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             ("PLZ:", "Postleitzahl"),
             ("Ort:", "Ort"),
             ("Gebietsleiter:", "Gebietsleiter"),
-            ("Kundennummer:", "Kundennummer"),
+            ("Kundennummer*:", "Kundennummer"),
             ("Präferierter DD:", "Präferierter DD"),
             ("Zusatzinfo:", "Zusatzinfo")
         ]
@@ -1094,6 +883,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # capture new data on ok/save
         if dialog.exec() == QDialog.Accepted:
+            selected_collection = self.partner_collection_cb.currentText()
             new_partner_data = {
                 'Name': line_edits['Name'].text(),
                 'Gebietsleiter': line_edits['Gebietsleiter'].text(),
@@ -1142,12 +932,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # save/update data
             try:
                 if partner_data and '_id' in partner_data:
-                    self.db_queries.update_partner(partner_data['_id'], new_partner_data)
+                    self.db_queries.update_partner(partner_data['_id'], new_partner_data, selected_collection)
                     QMessageBox.information(self, "Information", "Partner Daten wurden aktualisiert.")
                     self.logger.log_partner_action(self.current_user, "aktualisiert", new_partner_data['Name'])
                     self._refresh_logs()
                 else:
-                    self.db_queries.insert_partner(new_partner_data)
+                    self.db_queries.insert_partner(new_partner_data, selected_collection)
                     QMessageBox.information(self, "Information", "Neuer Partner wurde erstellt.")
                     self.logger.log_partner_action(self.current_user, "erstellt", new_partner_data['Name'])
                     self._refresh_logs()
@@ -1158,32 +948,34 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def _edit_selected_partner(self):
         """Edit selected partner"""
         index = self.partner_table.currentIndex()
+        selected_collection = self.partner_collection_cb.currentText()
         if not index.isValid():
-            QMessageBox.warning(self, "Warnung", "Bitte wählen Sie einen Partner aus.")
+            QMessageBox.warning(self, "Warnung", "Bitte wählen Sie einen Eintrag aus.")
             return
 
         partner_id = self.partner_model.item(index.row(), 0).data(Qt.UserRole)
 
         try:
-            partner_data = self.db_queries.get_partner_by_id(partner_id)
+            partner_data = self.db_queries.get_partner_by_id(partner_id, selected_collection)
             if not partner_data:
-                raise ValueError("Partner not found")
+                raise ValueError("Keinen Datenbank Eintrag gefunden")
 
             self._show_partner_dialog(partner_data)
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Fehler beim Laden der Partner-Daten: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Fehler beim Laden der Daten: {str(e)}")
 
     def _delete_selected_partner(self):
         """Delete selected partner"""
         index = self.partner_table.currentIndex()
+        selected_collection = self.partner_collection_cb.currentText()
         if not index.isValid():
-            QMessageBox.warning(self, "Warnung", "Bitte wählen Sie einen Partner aus.")
+            QMessageBox.warning(self, "Warnung", "Bitte wählen Sie einen Eintrag aus.")
             return
 
         reply = QMessageBox(self)
-        reply.setWindowTitle("Partner löschen")
-        reply.setText("Möchten Sie diesen Partner wirklich löschen?")
+        reply.setWindowTitle(selected_collection + " - Eintrag löschen")
+        reply.setText("Möchten Sie diesen Eintrag wirklich löschen?")
 
         confirm_button = reply.addButton("Ja", QMessageBox.ButtonRole.AcceptRole)
         cancel_button = reply.addButton("Nein", QMessageBox.ButtonRole.RejectRole)
@@ -1198,7 +990,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
                 self.logger.log_partner_action(self.current_user, "gelöscht", partner_name)
                 self._refresh_logs()
-                self.db_queries.delete_partner(partner_id)
+                self.db_queries.delete_partner(partner_id, selected_collection)
                 self._load_partners()
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Fehler beim Löschen: {str(e)}")
@@ -1217,7 +1009,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # === Change Password Section ===
         change_password_group = QGroupBox("Passwort ändern")
-        change_password_layout = QGridLayout(change_password_group)  # Use QGridLayout
+        change_password_layout = QGridLayout(change_password_group)
+        change_password_group.setStyleSheet(CHANGE_PW_SECTION)
 
         # current password input
         self.current_password_label = QLabel("Aktuelles Passwort:")
@@ -1228,7 +1021,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         current_password_reveal = QPushButton("🙈")
         current_password_reveal.setCheckable(True)
         current_password_reveal.setFixedWidth(30)
-        current_password_reveal.setStyleSheet("background-color: transparent; border: none;")
+        current_password_reveal.setStyleSheet(TRANSPARENT_BUTTON)
         current_password_reveal.toggled.connect(
             lambda: self._toggle_password_visibility(self.current_password_edit, current_password_reveal))
 
@@ -1249,7 +1042,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         new_password_reveal = QPushButton("🙈")
         new_password_reveal.setCheckable(True)
         new_password_reveal.setFixedWidth(30)
-        new_password_reveal.setStyleSheet("background-color: transparent; border: none;")
+        new_password_reveal.setStyleSheet(TRANSPARENT_BUTTON)
         new_password_reveal.toggled.connect(
             lambda: self._toggle_password_visibility(self.new_password_edit, new_password_reveal))
 
@@ -1270,7 +1063,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         confirm_password_reveal = QPushButton("🙈")
         confirm_password_reveal.setCheckable(True)
         confirm_password_reveal.setFixedWidth(30)
-        confirm_password_reveal.setStyleSheet("background-color: transparent; border: none;")
+        confirm_password_reveal.setStyleSheet(TRANSPARENT_BUTTON)
         confirm_password_reveal.toggled.connect(
             lambda: self._toggle_password_visibility(self.confirm_password_edit, confirm_password_reveal))
 
@@ -1287,18 +1080,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         change_password_button = QPushButton("Passwort ändern")
         change_password_button.clicked.connect(self._change_password)
         change_password_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        change_password_button.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;  /* Green background */
-                color: white;  /* White text */
-                border: none;  /* No border */
-                border-radius: 3px;  /* Rounded corners */
-                padding: 10px;  /* Padding */
-            }
-            QPushButton:hover {
-                background-color: #45a049;  /* Darker green on hover */
-            }
-        """)
         button_layout.addWidget(change_password_button)
         button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -1308,18 +1089,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         layout.addWidget(change_password_group, 0, 0)  # Row 0, Column 0
 
-        change_password_group.setStyleSheet("""
-                QGroupBox {
-                    font-weight: bold;
-                    border: 1px solid #cccccc;
-                    border-radius: 5px;
-                    padding: 10px;
-                }
-                QLabel {
-                    background: none;
-                    border: none;
-                }
-            """)
+
 
         # === Snapshot Section ===
         snapshot_group = QGroupBox("Datenbank-Snapshot erstellen")
@@ -1329,14 +1099,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # collection selection
         collection_label = QLabel("Sammlung:")
-        collection_label.setStyleSheet("background: none;")
         collection_label.setFixedWidth(collection_label.sizeHint().width())
-        self.collection_combo = QComboBox()
+        self.snapshot_collection_cb = QComboBox()
         self._load_collections()
-        self.collection_combo.setFixedWidth(150)
+        self.snapshot_collection_cb.setFixedWidth(150)
 
         collection_layout.addWidget(collection_label)
-        collection_layout.addWidget(self.collection_combo)
+        collection_layout.addWidget(self.snapshot_collection_cb)
         collection_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         snapshot_layout.addLayout(collection_layout, 0, 0)
@@ -1348,25 +1117,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         snapshot_explanation.setWordWrap(True)
         snapshot_explanation.setFixedHeight(40)
         snapshot_explanation.setFixedWidth(400)
-        snapshot_explanation.setStyleSheet("background: none;")
         snapshot_create_layout.addWidget(snapshot_explanation)
         snapshot_create_layout.setContentsMargins(0, 10, 0, 0)
 
         snapshot_button = QPushButton("Snapshot erstellen")
         snapshot_button.setFixedWidth(150)
         snapshot_button.clicked.connect(self._create_snapshot)
-        snapshot_button.setStyleSheet(""" 
-                    QPushButton {
-                        background-color: #4CAF50;  /* Green background */
-                        color: white;  /* White text */
-                        border: none;  /* No border */
-                        border-radius: 3px;  /* Rounded corners */
-                        padding: 10px;  /* Padding */
-                    }
-                    QPushButton:hover {
-                        background-color: #45a049;  /* Darker green on hover */
-                    }
-                """)
+
         snapshot_create_layout.addWidget(snapshot_button)
         snapshot_layout.addLayout(snapshot_create_layout, 1, 0)
 
@@ -1377,43 +1134,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         upload_explanation.setWordWrap(True)
         upload_explanation.setFixedHeight(40)
         upload_explanation.setFixedWidth(400)
-        upload_explanation.setStyleSheet("background: none;")
         snapshot_upload_layout.addWidget(upload_explanation)
         snapshot_upload_layout.setContentsMargins(0, 10, 0, 0)
 
         upload_button = QPushButton("Backup hochladen")
         upload_button.setFixedWidth(150)
         upload_button.clicked.connect(self._upload_data)
-        upload_button.setStyleSheet(""" 
-                    QPushButton {
-                        background-color: #4CAF50;  /* Green background */
-                        color: white;  /* White text */
-                        border: none;  /* No border */
-                        border-radius: 3px;  /* Rounded corners */
-                        padding: 10px;  /* Padding */
-                    }
-                    QPushButton:hover {
-                        background-color: #45a049;  /* Darker green on hover */
-                    }
-                """)
+
         snapshot_upload_layout.addWidget(upload_button)
         snapshot_layout.addLayout(snapshot_upload_layout, 2, 0)
 
         snapshot_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         snapshot_layout.setVerticalSpacing(15)
 
-        snapshot_group.setStyleSheet(""" 
-                    QGroupBox {
-                        font-weight: bold;
-                        border: 1px solid #cccccc;
-                        border-radius: 5px;
-                        padding: 10px;
-                    }
-                    QLabel {
-                        background: none;
-                        border: none;
-                    }
-                """)
+        snapshot_group.setStyleSheet(SNAPSHOT_SECTION)
 
         layout.addWidget(snapshot_group, 0, 1)  # Row 0, Column 1
 
@@ -1570,28 +1304,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         tab_widget.addTab(create_user_tab, "Benutzer erstellen")
 
-        manage_users_group.setStyleSheet(""" 
-                            QGroupBox {
-                                font-weight: bold;
-                                border: 1px solid #cccccc;
-                                border-radius: 5px;
-                                padding: 10px;
-                            }
-                            QLabel {
-                                background: none;
-                                border: none;
-                            }
-                            QPushButton {
-                                background-color: #4CAF50;  /* Green background */
-                                color: white;
-                                border: none;
-                                border-radius: 3px;
-                                padding: 10px;
-                            }
-                            QPushButton:hover {
-                                background-color: #45a049;  /* Darker green on hover */
-                            }
-                            """)
+        manage_users_group.setStyleSheet(MANAGE_USER_SECTION)
 
         layout.addWidget(manage_users_group, 1, 0)  # Row 1, Column 0
 
@@ -1615,18 +1328,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         log_tab.addTab(self.ors_logs_tab, 'ORS Statistik')
 
         self._refresh_logs()
-        logs_group.setStyleSheet("""
-                        QGroupBox {
-                            font-weight: bold;
-                            border: 1px solid #cccccc;
-                            border-radius: 5px;
-                            padding: 10px;
-                        }
-                        QTextEdit {
-                            background-color: #f0f0f0;
-                            border: none;
-                        }
-                    """)
+        logs_group.setStyleSheet(LOG_SECTION)
 
         layout.addWidget(logs_group, 1, 1)  # Row 1, Column 1
 
@@ -1691,7 +1393,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def _create_snapshot(self):
         """Snapshot of the selected collection in JSON format"""
-        collection_name = self.collection_combo.currentText()
+        collection_name = self.snapshot_collection_cb.currentText()
         if not collection_name:
             QMessageBox.warning(self, "Warnung", "Bitte wählen Sie eine Sammlung aus.")
             return
@@ -1722,7 +1424,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """Load all collections from the current database into the combo box"""
         try:
             collections = self.db.db.list_collection_names()
-            self.collection_combo.addItems(collections)
+            self.snapshot_collection_cb.addItems(collections)
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Fehler beim Laden der Sammlungen: {str(e)}")
 
@@ -1734,7 +1436,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if not file_name:
             return
 
-        collection_name = self.collection_combo.currentText()
+        collection_name = self.snapshot_collection_cb.currentText()
         if not collection_name:
             QMessageBox.warning(self, "Warnung", "Bitte wählen Sie eine Sammlung aus.")
             return
@@ -1948,12 +1650,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.close()
 
-    def _init_settings_page_signals(self):
-        """Initialize settings page signals"""
-        self.save_button.clicked.connect(self._prompt_for_password_and_update_user)
-        self.create_button.clicked.connect(self._prompt_for_password_and_create_user)
-        self.delete_button.clicked.connect(self._prompt_for_password_and_delete_user)
-
     def _refresh_logs(self):
         """Load latest logs"""
         self._display_user_logs()
@@ -2021,6 +1717,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             ors_logs_text += f'<span>{timestamp}: {ors}</span><br>'
 
         self.ors_logs_tab.setHtml(ors_logs_text)
+
+    def _init_settings_page_signals(self):
+        """Initialize settings page signals"""
+        self.save_button.clicked.connect(self._prompt_for_password_and_update_user)
+        self.create_button.clicked.connect(self._prompt_for_password_and_create_user)
+        self.delete_button.clicked.connect(self._prompt_for_password_and_delete_user)
 
     # === Event Handlers ===
     def resizeEvent(self, event):

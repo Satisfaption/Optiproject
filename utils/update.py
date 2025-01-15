@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import time
 
 import requests
 import hashlib
@@ -61,23 +62,24 @@ def check_for_updates():
 def download_update(version_info):
     url = f"{version_info['files'][0]['url']}"
     expected_sha512 = version_info['files'][0]['sha512']
-    file_name = version_info['path']
+    file_name, file_ext = os.path.splitext(version_info['path'])
+    new_file = f"{file_name}_new{file_ext}"
 
     try:
         response = requests.get(url)
         response.raise_for_status()
 
-        with open(file_name, "wb") as file:
+        with open(new_file, "wb") as file:
             file.write(response.content)
 
-        # Verify the file integrity
+        # verify file integrity
         sha512_hash = hashlib.sha512()
-        with open(file_name, "rb") as file:
+        with open(new_file, "rb") as file:
             for byte_block in iter(lambda: file.read(4096), b""):
                 sha512_hash.update(byte_block)
 
-        if sha512_hash.hexdigest() == expected_sha512:
-            return file_name
+        if sha512_hash.hexdigest() == expected_sha512.lower():
+            return new_file
         else:
             print("Downloaded file is corrupted. Please try again.")
     except requests.exceptions.RequestException as e:
@@ -139,7 +141,33 @@ def restart_application(file_name):
     except Exception as e:
         print(f"Error restarting application: {e}")
 
+def cleanup_old_version():
+    current_executable = sys.executable
+    file_name, file_ext = os.path.splitext(current_executable)
+    original_name = f"{file_name[:-4]}{file_ext}"
+
+    if "_new" in file_name:
+        if os.path.exists(original_name):
+            try:
+                while True:
+                    try:
+                        os.remove(original_name)
+                        print(f"Removed old executable: {original_name}")
+                        break
+                    except PermissionError:
+                        print(f"Old file {original_name} is still in use. Retrying...")
+                        time.sleep(1)
+            except Exception as e:
+                print(f"Failed to remove old executable: {e}")
+
+        try:
+            os.rename(current_executable, original_name)
+            print(f"Renamed new executable to {original_name}")
+        except Exception as e:
+            print(f"Failed to rename new executable: {e}")
+
 def prompt_update(parent, on_no_callback, on_ok_callback=None):
+    cleanup_old_version()
     latest_version_info = check_for_updates()
     if latest_version_info:
         update_dialog = QDialog(parent)
@@ -176,6 +204,7 @@ def on_ok(update_dialog, latest_version_info):
     file_name = download_update(latest_version_info)
     if file_name:
         show_info(update_dialog.parent(), "Update", "Download abgeschlossen, App wird neu gestartet.")
+        time.sleep(1)
         restart_application(file_name)
     else:
         show_error(update_dialog.parent(), "Update", "Fehler beim Download.")
