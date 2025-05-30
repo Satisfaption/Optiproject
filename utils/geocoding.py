@@ -1,3 +1,4 @@
+import json
 import time
 import os
 import requests
@@ -85,28 +86,47 @@ def calculate_driving_distance(start_lat, start_lon, end_lat, end_lon):
         Error: HTTPError Code, or None if failed
     """
     api_key = os.getenv(EnvVars.ORS_API_KEY)
-    ORS = os.getenv(EnvVars.ORS_API_KEY)
+    #ORS = os.getenv(EnvVars.ORS_API_KEY)
     if not api_key:
-        raise RuntimeError("OpenRouteService API key not found. Please check your environment configuration.")
-    #url = f'https://api.openrouteservice.org/v2/directions/driving-car?api_key={api_key}&start={start_lon},{start_lat}&end={end_lon},{end_lat}'
-    url = f'{ORS}start={start_lon},{start_lat}&end={end_lon},{end_lat}'
+        return None, 401  # Unauthorized or Missing API Key
+    url = f'https://api.openrouteservice.org/v2/directions/driving-car/json'
+    #url = f'{ORS}start={start_lon},{start_lat}&end={end_lon},{end_lat}'
+    headers = {
+        'Authorization': api_key,
+        'Content-Type': 'application/json'
+    }
+    body = {
+        'coordinates': [
+            [start_lon, start_lat],  # ORS expects [lon, lat]
+            [end_lon, end_lat]
+        ],
+        'instructions': False,
+        'preference': 'shortest',
+        'radiuses': [1000],
+        'units': 'm'
+    }
     max_retries = 3
 
     for attempt in range(max_retries):
         try:
-            response = requests.get(url, timeout=5)
+            response = requests.post(url, headers=headers, json=body, timeout=5)
             response.raise_for_status()
             data = response.json()
 
-            if 'features' in data and data['features']:
-                distance = data['features'][0]['properties']['segments'][0]['distance']
+            if 'routes' in data and data['routes']:
+                distance = data['routes'][0]['summary']['distance']
                 return distance, None  # Return distance and (no) error message
             else:
-                return None, response.status_code  #"No distance data returned from the server."
+                return None, 204  # No Content – empty response with no features
 
+
+        except requests.exceptions.Timeout:
+            return None, 408  # Request Timeout
         except requests.exceptions.ConnectionError:
-            return None, 503
-        except Exception as e:
-            return None, getattr(e.response, 'status_code', None) if isinstance(e, requests.exceptions.HTTPError) else None
+            return None, 503  # Service Unavailable – can't reach server
+        except requests.exceptions.HTTPError as http_err:
+            return None, http_err.response.status_code if http_err.response else 500
+        except Exception:
+            return None, 520  # Unknown Error
 
-    return None, "Unknown error occurred."
+    return None, 504  # Gateway Timeout – max retries exceeded
