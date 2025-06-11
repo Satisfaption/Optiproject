@@ -45,7 +45,7 @@ def get_coordinates_cached(address: str) -> tuple:
         if location:
             return location.latitude, location.longitude
     except Exception as e:
-        print(f"Geocoding error for address '{address}': {e}")
+        pass #print(f"Geocoding error for address '{address}': {e}")
 
     return None, None
 
@@ -115,6 +115,13 @@ def calculate_driving_distance(start_lat, start_lon, end_lat, end_lon):
 
             if 'routes' in data and data['routes']:
                 distance = data['routes'][0]['summary']['distance']
+                # check responses in case of errors
+                '''if plz:
+                    os.makedirs("ors_logs", exist_ok=True)
+                    filename = f"ors_logs/ors_response_{plz}.json"
+                    with open(filename, "w", encoding="utf-8") as f:
+                        json.dump(data, f, ensure_ascii=False, indent=2)'''
+
                 return distance, None  # Return distance and (no) error message
             else:
                 return None, 204  # No Content – empty response with no features

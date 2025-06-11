@@ -66,6 +66,7 @@ class DataFilter:
                     distance_km = haversine_distance
                 else:
                     road_distance, status_code = calculate_driving_distance(user_lat, user_lon, partner_lat, partner_long)
+                    self.db_queries.save_ors_count()
                     if road_distance:
                         distance_km = round(road_distance / 1000, 2)
                         #print(f"Road distance for {kundennummer}: {distance_km} km")
@@ -104,7 +105,5 @@ class DataFilter:
 
         if errors_4xx:
             error_messages.append(f"Fehler für diese Einträge: {errors_4xx}")
-
-        self.db_queries.save_ors_count(self.ors_usage_count)
 
         return filtered_data, error_messages

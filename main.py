@@ -2,7 +2,7 @@ import sys
 from PySide6.QtWidgets import QApplication, QMessageBox
 from utils.env_loader import load_environment
 from App_Login.login import LoginWindow
-from utils.update import prompt_update
+from utils.update import prompt_update, cleanup_old_version
 
 
 def main():
@@ -18,6 +18,7 @@ def main():
 
         app = QApplication(sys.argv)
 
+        cleanup_old_version()
         prompt_update(None, lambda: print("User chose not to update."), on_ok_update)
 
         login_window = LoginWindow()
