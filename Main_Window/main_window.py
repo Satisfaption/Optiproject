@@ -1478,7 +1478,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.user_combo.addItem(user)
 
         except Exception as e:
-            print(f"Error loading database users: {e}")
+            pass #print(f"Error loading database users: {e}")
 
     def _load_roles(self):
         """Populate roles combobox"""

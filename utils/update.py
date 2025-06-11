@@ -19,29 +19,26 @@ def get_latest_version_info(parent=None):
         response.raise_for_status()
         release_info = response.json()
 
-        for asset in release_info['assets']:
-            if asset['name'] == 'latest.yml':
-                version_url = asset['browser_download_url']
-                break
-        else:
-            raise ValueError("latest.yml not found in release assets")
+        # find latest.yaml
+        version_asset = next(
+            (asset for asset in release_info.get('assets', []) if asset.get('name') == 'latest.yml'),
+            None
+        )
+        if not version_asset:
+            raise ValueError("Asset 'latest.yml' konnte nicht gefunden werden.")
 
-        response = requests.get(version_url)
-        response.raise_for_status()
-        version_info = yaml.safe_load(response.text)
+        # parse latest.yaml
+        version_response = requests.get(version_asset['browser_download_url'])
+        version_response.raise_for_status()
+        version_info = yaml.safe_load(version_response.text)
+
+        if not isinstance(version_info, dict):
+            raise ValueError("Inhalt der latest.yml-Datei fehlerhaft.")
 
         return version_info
-    except requests.exceptions.RequestException as e:
-        show_error(parent, "Error fetching latest version info", str(e))
-        return None
-    except yaml.YAMLError as e:
-        show_error(parent, "Error parsing latest.yml", str(e))
-        return None
-    except KeyError as e:
-        show_error(parent, "Key error", str(e))
-        return None
-    except ValueError as e:
-        show_error(parent, "Value error", str(e))
+
+    except (requests.RequestException, yaml.YAMLError, ValueError) as e:
+        show_info(parent, "Update Information", f"Update Check fehlgeschlagen:\n{e}")
         return None
 
 def get_current_version():
@@ -51,65 +48,79 @@ def get_current_version():
 def check_for_updates():
     latest_version_info = get_latest_version_info()
     if not latest_version_info:
-        return
+        sys.exit(0)
 
-    current_version = get_current_version()
-    latest_version = latest_version_info['version']
+    try:
+        current_version = version.parse(get_current_version())
+        latest_version = version.parse(latest_version_info['version'])
 
-    if version.parse(latest_version) > version.parse(current_version):
-        return latest_version_info
+        if latest_version > current_version:
+            return latest_version_info
+        else:
+            #print("No update available. You're on the latest version.")
+            return None
+    except Exception as e:
+        #print(f"Error comparing versions: {e}")
+        return None
 
-def download_update(version_info):
+def prepare_for_update(version_info, parent=None):
+    current_executable = sys.executable
+
+    if not current_executable.lower().endswith(".exe") or "python" in os.path.basename(current_executable).lower():
+        show_info(parent, "Update Error", "development mode blocker for me")
+        sys.exit(0)
+
+    backup_executable = current_executable.replace(".exe", "_old.exe")
+
+    try:
+        # rename running executable
+        os.rename(current_executable, backup_executable)
+        #print(f"Renamed current executable to: {backup_executable}")
+    except OSError as e:
+        show_info(parent, "Update Fehlgeschlagen", f"Alte Datei konnte nicht umbenannt werden: \n{e}")
+        sys.exit(0)
+
+    new_file = download_update(version_info, current_executable, parent)
+
+    if new_file is None:
+        # Roll back
+        try:
+            os.rename(backup_executable, current_executable)
+            #print(f"Reverted to original executable: {current_executable}")
+        except OSError as e:
+            show_info(parent, "Update Fehlgeschlagen", f"Wiederherstellen des Ursprungsnamen fehlgeschlagen: \n{e}")
+        sys.exit(0)
+
+def download_update(version_info, target_file, parent=None):
     url = f"{version_info['files'][0]['url']}"
     expected_sha512 = version_info['files'][0]['sha512']
-    file_name, file_ext = os.path.splitext(version_info['path'])
-    new_file = f"{file_name}_new{file_ext}"
 
     try:
         response = requests.get(url)
         response.raise_for_status()
 
-        with open(new_file, "wb") as file:
+        with open(target_file, "wb") as file:
             file.write(response.content)
 
         # verify file integrity
         sha512_hash = hashlib.sha512()
-        with open(new_file, "rb") as file:
+        with open(target_file, "rb") as file:
             for byte_block in iter(lambda: file.read(4096), b""):
                 sha512_hash.update(byte_block)
 
-        if sha512_hash.hexdigest() == expected_sha512.lower():
-            return new_file
-        else:
-            print("Downloaded file is corrupted. Please try again.")
+        if sha512_hash.hexdigest().lower() != expected_sha512.lower():
+            os.remove(target_file)  # Clean up corrupted file
+            show_info(parent, "Update Fehlgeschlagen", "Prüfsumme der Datei stimmt nicht überein.\nDatei beschädigt oder manipuliert.")
+            return None
+        return target_file
     except requests.exceptions.RequestException as e:
-        print(f"Error downloading update: {e}")
+        show_info(parent, "Update Fehlgeschlagen", f"Fehler beim Download der Datei: {e}")
+        return None
+    except OSError as e:
+        show_info(parent, "Update Fehlgeschlagen", f"Fehler beim Speichern der Datei: {e}")
+        return None
 
 def show_info(parent, title, message):
-    info_dialog = QDialog(parent)
-    info_dialog.setWindowTitle(title)
-    layout = QVBoxLayout(info_dialog)
-
-    label = QLabel(message)
-    font = QFont()
-    font.setPointSize(12)
-    label.setFont(font)
-    layout.addWidget(label)
-
-    button_layout = QHBoxLayout()
-
-    button = QPushButton("OK")
-    button.setFixedSize(80, 30)
-    button.clicked.connect(info_dialog.accept)
-    button_layout.addWidget(button)
-
-    layout.addLayout(button_layout)
-
-    info_dialog.setMinimumHeight(120)
-
-    info_dialog.exec()
-
-def show_error(parent, title, message):
     error_dialog = QDialog(parent)
     error_dialog.setWindowTitle(title)
     layout = QVBoxLayout(error_dialog)
@@ -133,41 +144,18 @@ def show_error(parent, title, message):
 
     error_dialog.exec()
 
-def restart_application(file_name):
-    try:
-        parent_pid = os.getpid()
-        subprocess.Popen(file_name)
-        os.kill(parent_pid, 9)
-    except Exception as e:
-        print(f"Error restarting application: {e}")
-
 def cleanup_old_version():
-    current_executable = sys.executable
-    file_name, file_ext = os.path.splitext(current_executable)
-    original_name = f"{file_name[:-4]}{file_ext}"
+    exe_dir = os.path.dirname(sys.executable)
+    old_exe = os.path.join(exe_dir, "Matrix_old.exe")
 
-    if "_new" in file_name:
-        if os.path.exists(original_name):
-            try:
-                while True:
-                    try:
-                        os.remove(original_name)
-                        print(f"Removed old executable: {original_name}")
-                        break
-                    except PermissionError:
-                        print(f"Old file {original_name} is still in use. Retrying...")
-                        time.sleep(1)
-            except Exception as e:
-                print(f"Failed to remove old executable: {e}")
-
+    if os.path.exists(old_exe):
         try:
-            os.rename(current_executable, original_name)
-            print(f"Renamed new executable to {original_name}")
+            os.remove(old_exe)
+            #print("Old version deleted.")
         except Exception as e:
-            print(f"Failed to rename new executable: {e}")
+            pass #print(f"Failed to remove old version: {e}")
 
 def prompt_update(parent, on_no_callback, on_ok_callback=None):
-    cleanup_old_version()
     latest_version_info = check_for_updates()
     if latest_version_info:
         update_dialog = QDialog(parent)
@@ -201,10 +189,11 @@ def handle_dialog_close(result):
 
 def on_ok(update_dialog, latest_version_info):
     update_dialog.accept()
-    file_name = download_update(latest_version_info)
-    if file_name:
-        show_info(update_dialog.parent(), "Update", "Download abgeschlossen, App wird neu gestartet.")
-        time.sleep(1)
-        restart_application(file_name)
-    else:
-        show_error(update_dialog.parent(), "Update", "Fehler beim Download.")
+
+    # rename + download
+    prepare_for_update(latest_version_info, update_dialog.parent())
+
+    # restart new downloaded version which will run cleanup on startup to delete old one
+    show_info(update_dialog.parent(), "Update Information", "Update abgeschlossen. Bitte die neue Datei starten.")
+    time.sleep(1)
+    sys.exit(0)

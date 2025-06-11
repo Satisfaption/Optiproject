@@ -179,19 +179,19 @@ class DatabaseQueries:
         except PyMongoError as e:
             raise QueryError(f"Failed to delete user: {e}")
 
-    def save_ors_count(self, count):
+    def save_ors_count(self):
         """Save ORS usage count"""
         try:
             self.db.get_collection("Änderungsprotokoll").update_one(
                 {"timestamp": datetime.now().date().isoformat()},
                 {
-                    "$set": {"type": "ors"},
-                    "$inc": {"ors_usage_count": count}
+                    "$setOnInsert": {"type": "ors"},
+                    "$inc": {"ors_usage_count": 1}
                 },
                 upsert=True
             )
         except Exception as e:
-            print(f"Error saving ORS usage count: {e}")
+            pass #print(f"Error saving ORS usage count: {e}")
 
     def get_latest_ors_count(self):
         """Retrieve latest ORS usage count"""
@@ -204,5 +204,5 @@ class DatabaseQueries:
                 return latest_entry["ors_usage_count"]
             return 0
         except Exception as e:
-            print(f"Error retrieving ORS usage count: {e}")
+            #print(f"Error retrieving ORS usage count: {e}")
             return 0

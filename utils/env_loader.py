@@ -32,7 +32,7 @@ def load_environment():
         raise FileNotFoundError("Could not find .env file")
 
     except Exception as e:
-        print(f"Error loading environment: {e}")
+        #print(f"Error loading environment: {e}")
         return False
 
 def verify_environment():
