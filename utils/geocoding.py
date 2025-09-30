@@ -89,50 +89,51 @@ def calculate_driving_distance(start_lat, start_lon, end_lat, end_lon):
     #ORS = os.getenv(EnvVars.ORS_API_KEY)
     if not api_key:
         return None, 401  # Unauthorized or Missing API Key
-    url = f'https://api.openrouteservice.org/v2/directions/driving-car/json'
+    url = 'https://api.openrouteservice.org/v2/directions/driving-car/json'
     #url = f'{ORS}start={start_lon},{start_lat}&end={end_lon},{end_lat}'
     headers = {
         'Authorization': api_key,
         'Content-Type': 'application/json'
     }
-    body = {
-        'coordinates': [
-            [start_lon, start_lat],  # ORS expects [lon, lat]
-            [end_lon, end_lat]
-        ],
-        'instructions': False,
-        'preference': 'shortest',
-        'radiuses': [1000],
-        'units': 'm'
-    }
-    max_retries = 3
 
-    for attempt in range(max_retries):
+    radius_list = [500, 1000, 1500, 2000, 2500, 5000, -1]
+
+    for radius in radius_list:
+        body = {
+            'coordinates': [
+                [start_lon, start_lat],  # ORS expects [lon, lat]
+                [end_lon, end_lat]
+            ],
+            'instructions': False,
+            'preference': 'shortest',
+            'radiuses': [radius],
+            'units': 'm'
+        }
+
         try:
-            response = requests.post(url, headers=headers, json=body, timeout=5)
-            response.raise_for_status()
+            response = requests.post(url=url, headers=headers, json=body, timeout=5)
             data = response.json()
+            response.raise_for_status()
+
 
             if 'routes' in data and data['routes']:
                 distance = data['routes'][0]['summary']['distance']
-                # check responses in case of errors
-                '''if plz:
-                    os.makedirs("ors_logs", exist_ok=True)
-                    filename = f"ors_logs/ors_response_{plz}.json"
-                    with open(filename, "w", encoding="utf-8") as f:
-                        json.dump(data, f, ensure_ascii=False, indent=2)'''
-
                 return distance, None  # Return distance and (no) error message
             else:
                 return None, 204  # No Content – empty response with no features
 
-
+        except requests.exceptions.HTTPError as http_err:
+            status = http_err.response.status_code
+            print(f"HTTPError caught! Status code: {status} for radius: {radius}")
+            if status == 404:
+                continue  # Next radius
+            else:
+                return None, status
         except requests.exceptions.Timeout:
             return None, 408  # Request Timeout
         except requests.exceptions.ConnectionError:
             return None, 503  # Service Unavailable – can't reach server
-        except requests.exceptions.HTTPError as http_err:
-            return None, http_err.response.status_code if http_err.response else 500
+
         except Exception:
             return None, 520  # Unknown Error
 
