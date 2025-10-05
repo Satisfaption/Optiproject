@@ -23,7 +23,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     a = sin(dlat / 2) ** 2 + cos(lat1_rad) * cos(lat2_rad) * sin(dlon / 2) ** 2
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
     distance = 6371 * c  # Radius of the Earth in kilometers
-    return distance
+    return round(distance, 2)
 
 @lru_cache(maxsize=1000)
 def get_coordinates_cached(address: str) -> tuple:
@@ -96,45 +96,37 @@ def calculate_driving_distance(start_lat, start_lon, end_lat, end_lon):
         'Content-Type': 'application/json'
     }
 
-    radius_list = [500, 1000, 1500, 2000, 2500, 5000, -1]
 
-    for radius in radius_list:
-        body = {
-            'coordinates': [
-                [start_lon, start_lat],  # ORS expects [lon, lat]
-                [end_lon, end_lat]
-            ],
-            'instructions': False,
-            'preference': 'shortest',
-            'radiuses': [radius],
-            'units': 'm'
-        }
+    body = {
+        'coordinates': [
+            [start_lon, start_lat],  # ORS expects [lon, lat]
+            [end_lon, end_lat]
+        ],
+        'instructions': False,
+        'preference': 'shortest',
+        'radiuses': [-1],  # use max distance to conserve usage limit
+        'units': 'm'
+    }
 
-        try:
-            response = requests.post(url=url, headers=headers, json=body, timeout=5)
-            data = response.json()
-            response.raise_for_status()
+    try:
+        response = requests.post(url=url, headers=headers, json=body, timeout=5)
+        data = response.json()
+        response.raise_for_status()
 
 
-            if 'routes' in data and data['routes']:
-                distance = data['routes'][0]['summary']['distance']
-                return distance, None  # Return distance and (no) error message
-            else:
-                return None, 204  # No Content – empty response with no features
+        if 'routes' in data and data['routes']:
+            distance = data['routes'][0]['summary']['distance']
+            return distance, None  # Return distance and (no) error message
+        else:
+            return None, 204  # No Content – empty response with no features
 
-        except requests.exceptions.HTTPError as http_err:
-            status = http_err.response.status_code
-            print(f"HTTPError caught! Status code: {status} for radius: {radius}")
-            if status == 404:
-                continue  # Next radius
-            else:
-                return None, status
-        except requests.exceptions.Timeout:
-            return None, 408  # Request Timeout
-        except requests.exceptions.ConnectionError:
-            return None, 503  # Service Unavailable – can't reach server
+    except requests.exceptions.HTTPError as http_err:
+        status = http_err.response.status_code
+        return None, status
+    except requests.exceptions.Timeout:
+        return None, 408  # Request Timeout
+    except requests.exceptions.ConnectionError:
+        return None, 503  # Service Unavailable – can't reach server
 
-        except Exception:
-            return None, 520  # Unknown Error
-
-    return None, 504  # Gateway Timeout – max retries exceeded
+    except Exception:
+        return None, 520  # Unknown Error
